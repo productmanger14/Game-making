@@ -1,3 +1,4 @@
+import { ensureSkills, gainMatchSkills, skillMatchRating } from "./skills.js";
 import { countries } from "./countries.js";
 import {
   player,
@@ -158,6 +159,8 @@ export function clubRoster(s, id, clubId) {
       p.record = club.records[i];
       p.seasonRecord = club.seasonRecords[i];
       p.fame = club.fames?.[i] ?? p.fame;
+      p.skills = club.skillStates?.[i] || p.skills;
+      ensureSkills(p);
       p.age += years;
       p.contract += years;
       for (const k of ["speed", "accel", "agility"])
@@ -189,6 +192,7 @@ function quickMatch(s, id, home, away, round) {
     seed: hash(`${s.world.seed}:${s.season}:${id}:${round}:${home}`),
   };
   const rosters = [clubRoster(s, id, home), clubRoster(s, id, away)];
+  const terrain = getLeague(s, id).table[home].terrain;
   const form = new Map(
     rosters
       .flat()
@@ -202,7 +206,9 @@ function quickMatch(s, id, home, away, round) {
         .filter((p) => !p.injury)
         .map((p) => ({
           p,
-          rating: overall(p) * form.get(p.id) + rand(rng) * 12,
+          rating:
+            overall(p) * form.get(p.id) * skillMatchRating(p, mode, terrain) +
+            rand(rng) * 12,
         }))
         .sort((a, b) => b.rating - a.rating)
         .slice(0, n)
@@ -213,7 +219,13 @@ function quickMatch(s, id, home, away, round) {
       break;
     }
     const strength = lineups.map(
-      (l) => l.reduce((a, p) => a + overall(p) * form.get(p.id), 0) / l.length,
+      (l) =>
+        l.reduce(
+          (a, p) =>
+            a +
+            overall(p) * form.get(p.id) * skillMatchRating(p, mode, terrain),
+          0,
+        ) / l.length,
     );
     const winner =
       rand(rng) <
@@ -257,19 +269,19 @@ function quickMatch(s, id, home, away, round) {
       );
     } else lineups[winner][0].record.aceWins++;
     for (let team = 0; team < 2; team++)
-      for (const appearance of lineups[team])
-        recordSet(
-          rosters[team].find((p) => p.id === appearance.id),
-          s.season,
-          appearance.record,
-        );
+      for (const appearance of lineups[team]) {
+        const p = rosters[team].find((p) => p.id === appearance.id);
+        recordSet(p, s.season, appearance.record);
+        gainMatchSkills(p);
+      }
   }
   const foreign = s.world.leagues.find((l) => l.id === id);
   if (foreign)
-    for (const [team, clubId] of [home, away].entries())
-      foreign.table.find((t) => t.id === clubId).fames = rosters[team].map(
-        (p) => p.fame,
-      );
+    for (const [team, clubId] of [home, away].entries()) {
+      const club = foreign.table.find((t) => t.id === clubId);
+      club.fames = rosters[team].map((p) => p.fame);
+      club.skillStates = rosters[team].map((p) => p.skills);
+    }
   return { round, day: s.fixtureDays[round - 1], home, away, score };
 }
 function applyResult(table, result) {

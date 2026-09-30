@@ -1,3 +1,4 @@
+import { ensureSkills } from "./skills.js";
 export const hiddenAttributes = {
   consistency: "꾸준함",
   dirtiness: "거친 플레이",
@@ -40,7 +41,7 @@ export function ensurePlayerAttributes(p) {
   if (p.unique != null) p.portraitKey = `special-${p.unique}`;
   else
     p.portraitKey ??= p.portrait == null ? "initial" : `regular-${p.portrait}`;
-  return p;
+  return ensureSkills(p);
 }
 export function matchReadiness(p, random, important = false) {
   ensurePlayerAttributes(p);

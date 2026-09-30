@@ -1,3 +1,11 @@
+import {
+  setSkillTraining,
+  forgetSkill,
+  skillDefinitions,
+  skillBehavior,
+  behaviorNames,
+} from "./skills.js";
+import { skillsHTML, trainingOptions, trainingStatus } from "./skills-view.js";
 import { seasonStats } from "./valuation.js";
 import { purchase, signSponsor, setTicketPrice } from "./finance.js";
 import { financeHTML, newFinanceView } from "./finance-view.js";
@@ -188,7 +196,7 @@ function shell() {
   document.documentElement.style.setProperty("--accent", state.clubColor);
   const locked = series && !series.finished;
   $("#app").innerHTML =
-    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.5.1</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
+    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.6.0</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
   renderContent();
 }
 function renderContent() {
@@ -368,17 +376,26 @@ function renderTraining(c) {
       )
       .join(
         "",
-      )}</div><section class="panel section-gap"><div class="panel-head"><h2>개인 훈련 · 1군과 유스</h2><span class="muted">개인 중점이 세션 성장 방향에 반영됩니다.</span></div><div class="table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>피로</th><th>개인 중점</th><th>역할 적응 훈련</th><th>최근 성장</th></tr></thead><tbody>${[
+      )}</div><section class="panel section-gap"><div class="panel-head"><h2>개인 훈련 · 1군과 유스</h2><span class="muted">개인 중점이 세션 성장 방향에 반영됩니다.</span></div><div class="table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>피로</th><th>개인 중점</th><th>역할 적응 훈련</th><th>전담 기술 훈련</th><th>최근 성장</th></tr></thead><tbody>${[
       ...state.players,
       ...state.youth,
     ]
       .map((p) => {
         const growth = state.growthLog.find((g) => g.id === p.id);
-        return `<tr><td><button class="ghost" data-player="${p.id}">${esc(p.name)}</button>${p.youth ? '<span class="pill">유스</span>' : ""}</td><td>${p.role}</td><td>${Math.round(p.fatigue)}%${p.fatigue > 65 ? " · 회복 권장" : ""}</td><td><select data-focus="${p.id}" aria-label="${esc(p.name)} 개인 훈련">${options(["균형", "무기", "체력", "전술", "협동"], p.trainingFocus || "균형")}</select></td><td><select data-role-focus="${p.id}" aria-label="${esc(p.name)} 역할 훈련">${options(roles, p.roleTraining || p.role)}</select><small>익숙함 ${p.roleFamiliarity?.[p.roleTraining] || 1}/20</small></td><td>${growth ? `${stats[growth.stat]} → ${growth.value}` : "훈련 진행 중"}</td></tr>`;
+        return `<tr><td><button class="ghost" data-player="${p.id}">${esc(p.name)}</button>${p.youth ? '<span class="pill">유스</span>' : ""}</td><td>${p.role}</td><td>${Math.round(p.fatigue)}%${p.fatigue > 65 ? " · 회복 권장" : ""}</td><td><select data-focus="${p.id}" aria-label="${esc(p.name)} 개인 훈련">${options(["균형", "무기", "체력", "전술", "협동"], p.trainingFocus || "균형")}</select></td><td><select data-role-focus="${p.id}" aria-label="${esc(p.name)} 역할 훈련">${options(roles, p.roleTraining || p.role)}</select><small>익숙함 ${p.roleFamiliarity?.[p.roleTraining] || 1}/20</small></td><td><select class="training-skill-select" data-skill-training="${p.id}" aria-label="${esc(p.name)} 기술 훈련">${trainingOptions(p, esc)}</select><small>${trainingStatus(p)}</small></td><td>${growth ? `${stats[growth.stat]} → ${growth.value}` : "훈련 진행 중"}</td></tr>`;
       })
       .join(
         "",
-      )}</tbody></table></div></section><section class="panel section-gap"><div class="panel-head"><h2>최근 훈련 기록</h2></div>${
+      )}</tbody></table></div></section><section class="panel section-gap"><div class="panel-head"><h2>최근 기술 성장</h2></div>${
+      state.skillHistory
+        .slice(0, 8)
+        .map(
+          (h) =>
+            `<div class="skill-recent"><strong>${esc(h.name)} · ${esc(skillDefinitions[h.id]?.name || h.id)} Lv.${h.level}</strong><br><small>${h.learned ? "새 기술 습득" : "숙련 향상"} · ${formatDate({ season: h.season }, h.day)}</small></div>`,
+        )
+        .join("") ||
+      '<p class="empty">개인 전담 기술을 정하면 훈련과 출전으로 성장합니다.</p>'
+    }</section><section class="panel section-gap"><div class="panel-head"><h2>최근 훈련 기록</h2></div>${
       state.trainingHistory
         .slice(0, 7)
         .map(
@@ -734,6 +751,7 @@ function findPlayer(id) {
   );
 }
 function detail(p, context = {}) {
+  ensurePlayerAttributes(p);
   const r = seasonStats(p);
   const market = state.market.includes(p),
     youth = state.youth.includes(p),
@@ -749,7 +767,7 @@ function detail(p, context = {}) {
       Math.round(p.pa / 2 + (100 - e.confidence) * 0.2),
     );
   openDialog(
-    `<div class="detail-grid"><div>${portrait(p, "portrait large")}<div class="trait"><strong>${p.unique != null ? uniques[p.unique].trait.name : p.personality}</strong><p>${p.unique != null ? uniques[p.unique].trait.text : "훈련과 경기 경험을 통해 자신만의 경력을 쌓습니다."}</p></div><div class="detail-meta">${p.country} · ${p.sex} · ${p.age}세<br>${p.appearance.height}cm</div></div><div><div class="eyebrow">PLAYER PROFILE</div><h2>${esc(p.name)}</h2>${context.club ? `<p class="profile-club">${esc(context.club)} · ${external ? "다른 구단 소속" : "내 구단"}</p>` : ""}<p class="muted">${p.role} · ${weapons[p.weapon].name} · 무기 숙련 ${p.mastery}/20</p><div class="grid three"><div class="panel stat-card"><p>역할 OVR</p><div class="value">${estimated ? `${Math.max(1, overall(p) - Math.round((100 - e.confidence) / 15))}–${Math.min(100, overall(p) + Math.round((100 - e.confidence) / 15))}` : overall(p)}</div></div><div class="panel stat-card"><p>잠재력 평가</p><div class="value">${potentialMin}–${potentialMax}</div></div><div class="panel stat-card"><p>시장 추정가</p><div class="value">${estimated ? `${e.low}–${e.high}` : value(p)}</div><p>백만원 · 시즌 실적·명성</p></div></div><div class="stats-grid section-gap">${Object.entries(
+    `<div class="detail-grid"><div>${portrait(p, "portrait large")}<div class="trait"><strong>${behaviorNames[skillBehavior(p)]}</strong><p>${p.personality} · 습득 기술 ${p.skills.length}/7개</p></div><div class="detail-meta">${p.country} · ${p.sex} · ${p.age}세<br>${p.appearance.height}cm</div></div><div><div class="eyebrow">PLAYER PROFILE</div><h2>${esc(p.name)}</h2>${context.club ? `<p class="profile-club">${esc(context.club)} · ${external ? "다른 구단 소속" : "내 구단"}</p>` : ""}<p class="muted">${p.role} · ${weapons[p.weapon].name} · 무기 숙련 ${p.mastery}/20</p><div class="grid three"><div class="panel stat-card"><p>역할 OVR</p><div class="value">${estimated ? `${Math.max(1, overall(p) - Math.round((100 - e.confidence) / 15))}–${Math.min(100, overall(p) + Math.round((100 - e.confidence) / 15))}` : overall(p)}</div></div><div class="panel stat-card"><p>잠재력 평가</p><div class="value">${potentialMin}–${potentialMax}</div></div><div class="panel stat-card"><p>시장 추정가</p><div class="value">${estimated ? `${e.low}–${e.high}` : value(p)}</div><p>백만원 · 시즌 실적·명성</p></div></div><div class="stats-grid section-gap">${Object.entries(
       stats,
     )
       .map(
@@ -758,7 +776,7 @@ function detail(p, context = {}) {
       )
       .join(
         "",
-      )}</div><section class="info section-gap season-report"><strong>${state.season} 시즌 기록${r.partial ? " · 업데이트 이후" : ""}</strong><p>${r.games}세트 · ${r.kills}킬 / ${r.deaths}데스 / ${r.assists}어시스트 · 깃발 ${r.objectives} · 에이스 승리 ${r.aceWins}</p><p class="muted">통산 ${p.record.games}세트 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 깃발 ${p.record.objectives} · 에이스 승리 ${p.record.aceWins}</p><p>명성 ${p.fame}/100 · 시즌이 바뀌어도 유지</p><small>몸값은 이번 시즌 실적과 명성·나이로 평가합니다.${r.games < 5 ? " 출전 5세트 미만은 실적을 보수적으로 반영합니다." : ""}${r.partial ? " 이전 저장의 시즌별 기록을 구분할 수 없어 업데이트 이후 실적만 반영합니다. 과거 기록은 통산에 보존됩니다." : ""}</small></section><section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
+      )}</div><section class="info section-gap season-report"><strong>${state.season} 시즌 기록${r.partial ? " · 업데이트 이후" : ""}</strong><p>${r.games}세트 · ${r.kills}킬 / ${r.deaths}데스 / ${r.assists}어시스트 · 깃발 ${r.objectives} · 에이스 승리 ${r.aceWins}</p><p class="muted">통산 ${p.record.games}세트 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 깃발 ${p.record.objectives} · 에이스 승리 ${p.record.aceWins}</p><p>명성 ${p.fame}/100 · 시즌이 바뀌어도 유지</p><small>몸값은 이번 시즌 실적과 명성·나이로 평가합니다.${r.games < 5 ? " 출전 5세트 미만은 실적을 보수적으로 반영합니다." : ""}${r.partial ? " 이전 저장의 시즌별 기록을 구분할 수 없어 업데이트 이후 실적만 반영합니다. 과거 기록은 통산에 보존됩니다." : ""}</small></section>${skillsHTML(p, { esc, editable: !state.matchSeries && !external && (state.players.includes(p) || state.youth.includes(p)) })}<section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
       p,
       e.confidence,
     )
@@ -956,6 +974,26 @@ document.addEventListener("click", (e) => {
         ))
           btn.disabled = true;
       }
+      return;
+    }
+    if (d.forgetSkill) {
+      const p = findPlayer(d.skillOwner);
+      if (
+        !p ||
+        state.matchSeries ||
+        !(state.players.includes(p) || state.youth.includes(p))
+      )
+        throw Error("경기 준비 중이거나 관리할 수 없는 선수입니다.");
+      if (
+        !window.confirm(
+          `${skillDefinitions[d.forgetSkill].name}의 레벨과 경험을 지우고 기술 슬롯을 비울까요?`,
+        )
+      )
+        return;
+      forgetSkill(p, d.forgetSkill);
+      save();
+      renderContent();
+      detail(p);
       return;
     }
     if (d.player) {
@@ -1358,6 +1396,25 @@ document.addEventListener("change", async (e) => {
       state.autoRecovery = el.checked;
       save();
       renderContent();
+    }
+    if (d.skillTraining) {
+      const p = findPlayer(d.skillTraining);
+      if (
+        !p ||
+        state.matchSeries ||
+        !(state.players.includes(p) || state.youth.includes(p))
+      )
+        throw Error("현재 전담 기술을 바꿀 수 없습니다.");
+      setSkillTraining(p, el.value);
+      save();
+      renderContent();
+      if ($("#detail").open) detail(p);
+      toast(
+        el.value
+          ? "전담 기술 훈련을 지정했습니다."
+          : "전담 기술 훈련을 중단했습니다.",
+      );
+      return;
     }
     if (d.roleFocus) {
       const p = findPlayer(d.roleFocus);

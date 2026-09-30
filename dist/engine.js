@@ -1,3 +1,10 @@
+import { motifs } from "./motifs.js";
+import {
+  signatureSkills,
+  preferredWeapon,
+  skillEffects,
+  skillBehavior,
+} from "./skills.js";
 import {
   settleFinanceDay,
   settleMatchFinance,
@@ -99,70 +106,15 @@ export const terrainInfo = {
     color: 0x657565,
   },
 };
-const motifNames =
-  "알렉산드로스|한니발|카이사르|스키피오|피로스|레오니다스|에파미논다스|필리포스|키루스|투트모세|람세스|벨리사리우스|나르세스|헤라클리우스|칭기즈 칸|수부타이|제베|티무르|칼리드|살라딘|바이바르스|메흐메트|쉴레이만|리처드|윌리엄|로버트 브루스|에드워드 3세|흑태자|헨리 5세|얀 지슈카|스칸데르베그|소비에스키|구스타브|나폴레옹|웰링턴|수보로프|프리드리히|한신|항우|백기|이정|악비|조조|관우|장비|여포|조운|척계광|이순신|쩐흥다오|다케다 신겐|우에스기 겐신|오다 노부나가|도쿠가와|무사시|윌리엄 마셜|스파르타쿠스|샤카|시바지|잔 다르크|아킬레우스|헥토르|헤라클레스|아이아스|디오메데스|오디세우스|페르세우스|테세우스|아탈란테|펜테실레이아|히폴리테|쿠 훌린|페르디아드|핀 막 쿨|스카하크|베오울프|시구르드|브륀힐드|아서|랜슬롯|가웨인|롤랑|올리비에|로스탐|소흐랍|에스판디야르|아르주나|비마|카르나|라마|하누만|손오공|나타|이랑신|후예|토르|티르|아테나|세크메트|스사노오".split(
-    "|",
-  );
-const special = {
-  60: { name: "전장의 선봉", text: "첫 60초의 접근 속도 +15%", kind: "rush" },
-  62: {
-    name: "압도적 완력",
-    text: "근접 타격 피해 +15%, 공격 피로 +20%",
-    kind: "power",
+export const uniques = motifs.map((m) => ({
+  id: m.id,
+  motif: m.motif,
+  type: m.type,
+  trait: {
+    name: signatureSkills[m.id].name,
+    text: signatureSkills[m.id].description,
+    kind: "skill",
   },
-  54: {
-    name: "간격의 지배자",
-    text: "개인전의 유효타 확률 +10%p",
-    kind: "duel",
-  },
-  43: { name: "접근 불허", text: "근접 공격 방어 확률 +8%p", kind: "guard" },
-  46: {
-    name: "구출의 달인",
-    text: "호위 역할일 때 이동 속도 +15%",
-    kind: "escort",
-  },
-  1: {
-    name: "포위 설계자",
-    text: "아군과 같은 적을 공격할 때 유효타 확률 +8%p",
-    kind: "team",
-  },
-  48: {
-    name: "전장의 설계자",
-    text: "거점 주변에서 방어 확률 +8%p",
-    kind: "zone",
-  },
-  71: {
-    name: "멈추지 않는 추격",
-    text: "이동 속도 +10%, 이동 피로 +15%",
-    kind: "chase",
-  },
-  86: {
-    name: "흔들림 없는 조준",
-    text: "원거리 유효타 확률 +8%p",
-    kind: "aim",
-  },
-  56: {
-    name: "끝까지 함께",
-    text: "아군 인원 열세에서 유효타 확률 +8%p",
-    kind: "last",
-  },
-};
-const genericTraits = [
-  {
-    name: "전술의 계승자",
-    text: "아군과 같은 적 공격 시 유효타 확률 +8%p",
-    kind: "team",
-  },
-  { name: "불굴의 전사", text: "인원 열세에서 유효타 확률 +8%p", kind: "last" },
-  { name: "숙련된 수호자", text: "근접 공격 방어 확률 +8%p", kind: "guard" },
-  { name: "결투의 명인", text: "개인전 유효타 확률 +10%p", kind: "duel" },
-  { name: "신속한 압박", text: "첫 60초 접근 속도 +15%", kind: "rush" },
-];
-export const uniques = motifNames.map((motif, i) => ({
-  id: i,
-  motif,
-  trait: special[i] || genericTraits[i % 5],
-  type: i < 60 ? "역사" : "신화·서사",
 }));
 export function rand(s) {
   s.seed = (Math.imul(s.seed, 1664525) + 1013904223) >>> 0;
@@ -303,6 +255,8 @@ export function player(
     for (const k of ["tech", "judgment", "tactics"])
       attributes[k] = clamp(attributes[k] + 2, 1, 20);
   }
+  if (unique != null && preferredWeapon(unique) != null)
+    wi = preferredWeapon(unique);
   const p = {
     id: s.nextId++,
     name,
@@ -674,10 +628,19 @@ export class Battle {
           contributors: {},
           animation: 0,
           targetId: null,
+          behavior: skillBehavior(p),
+          lastGuard: -100,
           cautions: 0,
           disqualified: false,
           flagId: null,
-          captureRole: i % 5 < 3 ? "runner" : "defender",
+          captureRole:
+            skillBehavior(p) === "runner"
+              ? "runner"
+              : ["escort", "hold"].includes(skillBehavior(p))
+                ? "defender"
+                : i % 5 < 3
+                  ? "runner"
+                  : "defender",
           lane: i % 3,
         });
       });
@@ -691,8 +654,80 @@ export class Battle {
   alive(team) {
     return this.units.filter((u) => u.team === team && u.alive);
   }
+  skillContext(u, target = null) {
+    const allies = this.alive(u.team).filter((a) => a !== u);
+    return {
+      armed: u.armed,
+      ranged: u.armed && weapons[u.p.weapon].range > 10,
+      time: this.time,
+      mode: this.modeIndex,
+      terrain: this.terrain,
+      hp: u.hp,
+      nearAlly: allies.some((a) => Math.hypot(a.x - u.x, a.z - u.z) < 6),
+      focus:
+        !!target &&
+        allies.some(
+          (a) =>
+            a.targetId === target.id &&
+            Math.hypot(a.x - target.x, a.z - target.z) <=
+              (a.armed ? weapons[a.p.weapon].range : 1.5),
+        ),
+      protect: allies.some(
+        (a) =>
+          (a.king || a.flagId !== null) && Math.hypot(a.x - u.x, a.z - u.z) < 8,
+      ),
+      zone: this.bases.some((b) => Math.hypot(b.x - u.x, b.z - u.z) < 8),
+      outnumbered: allies.length + 1 < this.alive(1 - u.team).length,
+      counter: this.time - u.lastGuard < 4,
+      carrying: u.flagId !== null,
+    };
+  }
+  styleTarget(u, enemies, fallback) {
+    const nearby = enemies.filter((e) => Math.hypot(e.x - u.x, e.z - u.z) < 15);
+    if (u.behavior === "flank")
+      return (
+        nearby.find((e) =>
+          this.units.some(
+            (a) =>
+              a !== u && a.alive && a.team === u.team && a.targetId === e.id,
+          ),
+        ) || fallback
+      );
+    if (u.behavior === "escort") {
+      const protectedUnit = this.units.find(
+        (a) =>
+          a !== u &&
+          a.alive &&
+          a.team === u.team &&
+          (a.king || a.flagId !== null),
+      );
+      if (protectedUnit)
+        return (
+          nearby.sort(
+            (a, b) =>
+              Math.hypot(a.x - protectedUnit.x, a.z - protectedUnit.z) -
+              Math.hypot(b.x - protectedUnit.x, b.z - protectedUnit.z),
+          )[0] || fallback
+        );
+    }
+    return fallback;
+  }
   flagDestination(u, target, hasEnemy) {
     if (u.flagId !== null) return this.bases[u.team];
+    if (u.behavior === "escort") {
+      const carrier = this.units.find(
+        (a) => a !== u && a.alive && a.team === u.team && a.flagId !== null,
+      );
+      if (
+        carrier &&
+        (!hasEnemy ||
+          Math.hypot(target.x - carrier.x, target.z - carrier.z) > 5)
+      )
+        return {
+          x: carrier.x + (u.team === 0 ? 2 : -2),
+          z: carrier.z + (u.lane - 1) * 2,
+        };
+    }
     const ownDropped = this.flags
       .filter(
         (f) =>
@@ -854,6 +889,7 @@ export class Battle {
         : { id: null, x: u.x, z: u.z, p: u.p };
       if (this.modeIndex === 3 && u.p.role === "기동")
         target = enemies.find((e) => e.king) || target;
+      target = this.styleTarget(u, enemies, target);
       if (u.team === 0 && enemies.length) {
         const near = enemies.filter(
           (e) => Math.hypot(e.x - u.x, e.z - u.z) < 12,
@@ -869,7 +905,7 @@ export class Battle {
       const wp = weapons[u.p.weapon];
       let range = u.armed ? wp.range : 1.5;
       let dist = Math.hypot(tx - u.x, tz - u.z);
-      const trait = u.p.unique != null ? uniques[u.p.unique].trait.kind : null;
+      const bonuses = skillEffects(u.p, this.skillContext(u, target));
       if (!u.armed) {
         u.recover -= dt;
         if (u.recover <= 0) {
@@ -894,6 +930,16 @@ export class Battle {
           objectiveMove = true;
         }
       }
+      if (this.modeIndex === 3 && !u.king && u.behavior === "escort") {
+        const king = this.units.find(
+          (a) => a.alive && a.team === u.team && a.king,
+        );
+        if (king && Math.hypot(king.x - u.x, king.z - u.z) > 5) {
+          tx = king.x + (u.team === 0 ? 2 : -2);
+          tz = king.z;
+          objectiveMove = true;
+        }
+      }
       if (this.modeIndex === 3 && u.king && dist < 10) {
         tx = u.spawn.x;
         tz = u.spawn.z;
@@ -901,17 +947,52 @@ export class Battle {
       let move = Math.hypot(tx - u.x, tz - u.z);
       const attackDist = Math.hypot(target.x - u.x, target.z - u.z);
       const ranged = range > 10;
-      const desired = objectiveMove ? 0.6 : ranged ? range * 0.65 : range * 0.8;
+      const desired = objectiveMove
+        ? 0.6
+        : u.behavior === "kite"
+          ? range * 0.9
+          : u.behavior === "assault"
+            ? range * 0.6
+            : ranged
+              ? range * 0.65
+              : range * 0.8;
+      // Footwork changes actual positioning, not only the displayed numbers.
+      if (
+        !objectiveMove &&
+        !u.king &&
+        u.armed &&
+        u.behavior === "kite" &&
+        attackDist < range * 0.65
+      ) {
+        const awayX = u.x - target.x,
+          awayZ = u.z - target.z,
+          norm = Math.hypot(awayX, awayZ) || 1;
+        tx = clamp(u.x + (awayX / norm) * 3, -34, 34);
+        tz = clamp(u.z + (awayZ / norm) * 3, -24, 24);
+        move = Math.hypot(tx - u.x, tz - u.z);
+      }
+      if (!objectiveMove && u.behavior === "hold" && attackDist > range + 5) {
+        const ally = this.alive(u.team)
+          .filter((a) => a !== u)
+          .sort(
+            (a, b) =>
+              Math.hypot(a.x - u.x, a.z - u.z) -
+              Math.hypot(b.x - u.x, b.z - u.z),
+          )[0];
+        if (ally && Math.hypot(ally.x - u.x, ally.z - u.z) > 8) {
+          tx = ally.x;
+          tz = ally.z;
+          move = Math.hypot(tx - u.x, tz - u.z);
+        }
+      }
       if (move > desired || tx !== target.x || tz !== target.z) {
         let speed = (1.05 + u.p.stats.speed * 0.095) * (u.energy / 180 + 0.45);
         if (u.team === 0 && this.tactic === "공격") speed *= 1.1;
         if (this.terrain === "snow") speed *= 0.8;
         if (this.terrain === "mountain")
           speed *= 0.78 + u.p.stats.balance * 0.01;
-        if (trait === "rush" && this.time < 60) speed *= 1.15;
-        if (trait === "chase") speed *= 1.1;
+        speed *= 1 + bonuses.speed;
         if (u.flagId !== null) speed *= 0.85;
-        if (trait === "escort" && u.p.role === "호위") speed *= 1.15;
         const dx = (tx - u.x) / Math.max(0.01, move),
           dz = (tz - u.z) / Math.max(0.01, move);
         u.x = clamp(u.x + dx * speed * dt, -34, 34);
@@ -921,7 +1002,7 @@ export class Battle {
           u.energy -
             dt *
               Math.max(0.025, 0.09 - u.p.stats.endurance * 0.003) *
-              (trait === "chase" ? 1.15 : 1),
+              (1 - bonuses.stamina),
         );
       }
       u.angle =
@@ -950,12 +1031,12 @@ export class Battle {
         u.cooldown =
           (ranged ? (u.p.weapon === 10 ? 7 : 4) : 3.8) +
           (20 - u.p.stats.tech) * 0.08;
+        u.cooldown *= 1 - bonuses.haste;
         u.animation = 0.7;
         u.energy = Math.max(
           5,
           u.energy -
-            (trait === "power" ? 1.44 : 1.2) *
-              (1.2 - u.p.stats.endurance * 0.025),
+            1.2 * (1 - bonuses.stamina) * (1.2 - u.p.stats.endurance * 0.025),
         );
         let hit =
           0.43 +
@@ -968,40 +1049,26 @@ export class Battle {
           hit = 0.4 + (u.p.stats.grapple - target.p.stats.defense) * 0.02;
         if (u.team === 0 && this.tactic === "공격") hit += 0.03;
         if (this.terrain === "forest" && ranged && attackDist > 12) hit -= 0.15;
-        if (trait === "duel" && this.modeIndex === 4) hit += 0.1;
-        if (trait === "aim" && ranged) hit += 0.08;
-        if (
-          trait === "team" &&
-          this.units.some(
-            (a) =>
-              a !== u &&
-              a.team === u.team &&
-              a.alive &&
-              a.targetId === target.id &&
-              Math.hypot(a.x - target.x, a.z - target.z) <
-                weapons[a.p.weapon].range,
-          )
-        )
-          hit += 0.08;
-        if (
-          trait === "last" &&
-          this.alive(u.team).length < this.alive(1 - u.team).length
-        )
-          hit += 0.08;
-        const targetTrait =
-          target.p.unique != null ? uniques[target.p.unique].trait.kind : null;
+        const targetBonuses = skillEffects(
+          target.p,
+          this.skillContext(target, u),
+        );
+        hit += bonuses.hit - targetBonuses.evasion;
         let guard =
           0.1 +
-          (target.p.stats.defense + weapons[target.p.weapon].guard) * 0.007;
+          (target.p.stats.defense +
+            (target.armed ? weapons[target.p.weapon].guard : 0)) *
+            0.007;
         if (target.team === 0 && this.tactic === "수비") guard += 0.06;
-        if (targetTrait === "guard" && !ranged) guard += 0.08;
-        if (
-          targetTrait === "zone" &&
-          this.zones.some((z) => Math.hypot(z.x - target.x, z.z - target.z) < 6)
-        )
-          guard += 0.08;
-        const landed =
-          rand(this.rng) < clamp(hit, 0.12, 0.9) && rand(this.rng) > guard;
+        guard = clamp(
+          guard + targetBonuses.guard - bonuses.penetration,
+          0.02,
+          0.65,
+        );
+        const accurate = rand(this.rng) < clamp(hit, 0.12, 0.9);
+        const blocked = accurate && rand(this.rng) <= guard;
+        const landed = accurate && !blocked;
+        if (blocked) target.lastGuard = this.time;
         this.events.push({
           from: { x: u.x, z: u.z },
           to: { x: target.x, z: target.z },
@@ -1013,20 +1080,23 @@ export class Battle {
         if (landed) {
           let damage =
             (u.armed ? wp.damage : 8) + (u.p.stats.strength - 10) * 0.4;
-          if (trait === "power" && !ranged) damage *= 1.15;
+          damage *= 1 + bonuses.damage;
           target.hp = Math.max(0, target.hp - damage);
           target.contributors[u.id] = this.time;
           if (
             target.armed &&
             rand(this.rng) <
               clamp(
-                0.025 + (u.p.stats.disarm - target.p.stats.tech) * 0.002,
+                0.025 +
+                  (u.p.stats.disarm - target.p.stats.tech) * 0.002 +
+                  bonuses.disarm -
+                  targetBonuses.retention,
                 0.005,
                 0.08,
               )
           ) {
             target.armed = false;
-            target.recover = 5;
+            target.recover = 5 * (1 - targetBonuses.recovery);
             this.drops.push({ owner: target.id, x: target.x + 1, z: target.z });
             this.log(`${target.p.name} 무기 손실`);
           }

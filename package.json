@@ -1,7 +1,7 @@
 {
   "name": "arena-manager",
   "productName": "ARENA Manager",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "현대 검투 구단 매니저 싱글플레이 게임",
   "author": "ARENA Project",
   "private": true,
@@ -9,7 +9,7 @@
   "main": "desktop/main.cjs",
   "scripts": {
     "start": "electron .",
-    "test": "node scripts/check-engine.mjs && node scripts/check-rules.mjs && node scripts/check-career.mjs && node scripts/check-attributes.mjs && node scripts/check-world.mjs && node scripts/check-finance.mjs && node scripts/check-valuation.mjs",
+    "test": "node scripts/check-engine.mjs && node scripts/check-rules.mjs && node scripts/check-career.mjs && node scripts/check-attributes.mjs && node scripts/check-world.mjs && node scripts/check-finance.mjs && node scripts/check-valuation.mjs && node scripts/check-skills.mjs",
     "build:win": "node scripts/build-desktop.mjs win",
     "build:linux": "node scripts/build-desktop.mjs linux",
     "build:dir": "electron-builder --dir"

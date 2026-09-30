@@ -1,3 +1,4 @@
+import { trainSkill, gainMatchSkills, skillDefinitions } from "./skills.js";
 import {
   ensureFinance,
   postTransaction,
@@ -188,6 +189,7 @@ export function migrateCareer(s) {
   s.autoRecovery ??= true;
   s.trainingHistory ??= [];
   s.growthLog ??= [];
+  s.skillHistory ??= [];
   s.transferHistory ??= [];
   s.financeHistory ??= [];
   s.setPlans ??= modes.map(() => ({
@@ -361,6 +363,25 @@ export function setTrainingSlot(s, index, field, v) {
     throw Error("훈련 계획 값이 올바르지 않습니다.");
   s.weekPlan[index][field] = v;
 }
+function reportSkillGrowth(s, p, event) {
+  const entry = {
+    ...event,
+    playerId: p.id,
+    name: p.name,
+    day: s.day,
+    season: s.season,
+  };
+  s.skillHistory ??= [];
+  s.skillHistory.unshift(entry);
+  s.skillHistory = s.skillHistory.slice(0, 100);
+  addNews(s, {
+    category: "훈련",
+    title: event.learned ? "새 기술 습득" : "기술 숙련 향상",
+    text: `${p.name} · ${skillDefinitions[event.id].name} Lv.${event.level}${event.learned ? " 습득" : " 도달"}`,
+    sender: "코칭 팀",
+    playerId: p.id,
+  });
+}
 function train(s, plan) {
   let gains = 0;
   for (const p of [...s.players, ...s.youth]) {
@@ -416,6 +437,19 @@ function train(s, plan) {
         p.roleFamiliarity[r] = bound((p.roleFamiliarity[r] || 1) + 1);
       }
     }
+    const activeSessions = [plan.am, plan.pm].filter(
+      (type) => sessions[type]?.keys.length,
+    ).length;
+    const skillEvent = trainSkill(
+      p,
+      ((6 + s.facilities.training * 2 + s.staff.coach) *
+        intensity *
+        trainingMotivation(p) *
+        (wasTired ? 0.5 : 1) *
+        activeSessions) /
+        2,
+    );
+    if (skillEvent) reportSkillGrowth(s, p, skillEvent);
     const load =
       [plan.am, plan.pm].reduce(
         (n, k) => n + Math.max(0, sessions[k]?.load || 0),
@@ -741,6 +775,8 @@ export function completeSet(s, series, battle) {
       ).find((p) => p.id === r.id);
       if (!p) continue;
       recordSet(p, s.season, { ...r, games: 1, aceWins: r.aceWin ? 1 : 0 });
+      for (const event of gainMatchSkills(p))
+        if (r.team === 0) reportSkillGrowth(s, p, event);
       p.fatigue = series.rosters[r.team].find((x) => x.id === p.id).fatigue;
       p.condition = 100 - p.fatigue;
     }
