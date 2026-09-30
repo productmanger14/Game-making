@@ -1,57 +1,52 @@
-# ARENA — Gladiator Manager
+# ARENA — 검투 구단 매니저 0.3.0
 
-Windows용 독립 실행 게임입니다. `ARENA-Manager-0.2.1-Windows.exe`를 실행하면 게임이 시작됩니다. 인터넷 연결이나 별도 브라우저가 필요하지 않습니다. 기존 저장은 게임의 저장 파일 내보내기/불러오기로 옮길 수 있습니다.
+Windows용 오프라인 싱글플레이 게임입니다. `ARENA-Manager-0.3.0-Windows.exe`를 실행하세요. 기존 저장은 자동으로 새 운영 시스템에 맞춰 변환되며, 구단 생성부터 시작하려면 사이드바의 **새 구단 생성**을 선택하세요.
 
-Playable first prototype of a modern, nonmagical gladiator club management game. Korean interface, anime portrait pool, low-poly 3D match viewer. Standalone Electron desktop application with vendored Three.js assets. No runtime CDN dependency for the game engine or renderer.
+## 이번 버전의 플레이 흐름
 
-## Implemented
+구단 생성 → 일정·훈련·영입 관리 → 하루/다음 경기까지 진행 → 응답이 필요한 새 소식 처리 → 경기일 전술·정확한 인원 선발 → 세트 진행 → 다음 세트 전술·명단 재설정 → 경기 종료와 회복.
 
-- Seeded random player generation, 30-player roster, youth promotion, recruitment events and free-agent contracts.
-- 100 historical/mythological motif records with random appearance schedules, no duplicate motif in a saved world. Prototype traits include ten specific traits and five shared behavioral templates.
-- 22 player attributes, weapon proficiency, role-specific overall, hidden potential, training and basic annual physical decline.
-- Five-set, first-to-three match series: 11v11 elimination, 20v20 capture-the-flag, 9v9 deathmatch (30-second respawn), 5v5 king hunt, 1v1 ace duel. Every set has a 3600-second in-game maximum.
-- Sensor-style damage, stamina, hit/guard checks, disarm and weapon recovery, kill/assist/objective records. Fatigue carries between sets; damage resets.
-- Four arena environments: urban, jungle, snow, mountain. Snow slows movement, forest reduces distant ranged accuracy, mountain uses balance for mobility. Terrain props currently sit beside movement lanes; there is no full obstacle navigation or line-of-sight solver yet.
-- Eight-team, double round-robin domestic season. Other fixtures simulated per round, table and history, weekly wages, prize revenue.
-- Facilities/staff team upgrades, scout estimates, adult-player affection/trust conversations and consensual relationship state.
-- Computer-local autosave plus JSON export/import. A match is committed only at the end of the series; reloading mid-match restarts that fixture.
+- **구단 생성**: 12개 나라, 나라별 8개 연고 도시, 구단 이름·감독 이름·나이·구단 색상. 나라에 맞는 상대 구단과 선수 이름, 도시 특성을 반영한 홈 경기장.
+- **일정**: 월별 캘린더, 14경기 시즌 일정, 홈·원정·경기장·결과. 다음 경기까지 진행은 경기일이나 필수 응답 이벤트에서 멈춥니다.
+- **훈련센터**: 반복 주간 오전·오후 세션, 강도, 경기 전후 자동 관리, 개인 훈련과 역할 적응, 성장·피로·의료 보고. 시설과 코칭 팀 수준이 성장에 반영됩니다.
+- **새 소식**: 경기·훈련·이적·구단·이벤트 분류, 미확인 표시, 상세 보고, 응답 선택. 후원 제안, 지역 테스트, 선수 매각 제안, 경쟁 구단 영입, 유스 승격과 개인 면담을 지원합니다.
+- **전술과 명단**: 종목별 선수·대형·운영·공격 우선 대상·세트 역할을 저장합니다. 세트마다 정확한 인원을 제출하고 왕과 에이스를 직접 선택합니다. 피로는 이어지며 선수를 교체할 수 있습니다.
+- **전투**: 11:11 섬멸전, 20:20 깃발 운반전, 9:9 데스매치(30초 리스폰), 5:5 왕잡기, 1:1 에이스전. 최대 인게임 60분, 5판 3선승제. 깃발은 각 진영에 3개, 아군 기지로 운반해 득점합니다.
+- **선수 초상**: 역사·신화 모티브 100명에 서로 다른 고정 애니풍 초상을 배정했습니다. 도감·별·유니크 표시는 없습니다. 일반 선수는 별도의 기존 초상 풀에서 배정됩니다. 일반 선수마다 새로운 이미지를 온라인 생성하는 기능은 없습니다.
+- **능력치**: 22개 개별 능력치와 무기 숙련, 16개 숨겨진 능력치를 1~20으로 관리합니다. 역할 OVR·잠재력 평가는 기존 100점 표시, 내부 성장 용량은 별도입니다.
 
-## Prototype scope
+## 숨겨진 성향
 
-The agreed long-term design includes 24 countries, multiple domestic divisions, continental and world competition, individual staff careers, transfers between clubs, advanced tactics, retirement and mentoring. Those are not complete in this version. Promotion/relegation is currently a season outcome flag; the next season still uses the same eight clubs. Rival squads are generated for each fixture and do not yet have persistent player careers. Scouting-market records initially start unproven.
+꾸준함, 거친 플레이, 중요 경기 활약, 다재다능, 부상 빈도, 프로 의식, 야망, 충성심, 압박 대처, 침착한 성품, 스포츠맨십, 적응력, 논쟁성, 집착도, 질투 성향, 경계 존중을 포함합니다.
 
-Portraits use sixteen generated adult-woman portraits assigned consistently to profiles; male generated profiles use a neutral initial avatar. Full individual portraits for all 100 uniques, live AI generation, uniform/age edits and portrait expression variants are not yet implemented. The 3D models are schematic anime-inspired athletes, not detailed character assets.
+제공된 FM 설명을 참고해 이 게임에 맞게 설계한 확률 모델입니다. 꾸준함은 경기 단위로 기량 발휘를 판정하며, 중요 경기 활약과 압박 대처는 시즌 막판 경기에 영향을 줍니다. 역할 친숙도와 다재다능은 다른 역할의 효율·학습에, 프로 의식과 야망은 성장에, 부상 빈도·피로·지구력·의료 시설은 훈련 중 회복 필요성에 반영됩니다. 거친 행동은 심판 주의로 이어지고, 한 세트에서 3회 주의를 받으면 해당 세트에서 실격합니다. 꾸준한 출전과 중요 경기 경험으로 일부 숨겨진 능력이 소폭 성장합니다.
 
-This is a local single-player save, not a shared/server account. No live image API or credentials are required. Gameplay runs offline in a dedicated desktop window. No website or game server is required.
+숨겨진 숫자는 선수 화면에 공개하지 않습니다. 코치·스카우트 관찰은 평가 신뢰도에 따라 정성적인 문구로 표시합니다. 집착·질투는 성인 1군 선수의 개인 면담 이벤트에 반영되며, 감독은 관계를 안심시키거나 개인적 경계를 설명할 수 있습니다. 연애 관계가 출전권을 자동 결정하거나 직접적인 전투 보너스를 주지는 않습니다.
 
-## Provisional rules
+## 저장
 
-- Elimination: maximum 60 minutes, no respawn; eliminate all opponents to win early.
-- Capture: maximum 60 minutes, three flags in each team's territory. Steal one enemy flag at a time and bring it within the friendly base's delivery radius. First to deliver all three wins early, otherwise compare delivered flags at time limit. No respawn. Eliminating opponents alone does not end the set. A carrier moves 15% slower and drops their flag on elimination. Teammates of the flag's owner can touch a dropped flag to return it home; opponents can pick it up. Captured flags leave play. These supplemental rules are prototype defaults.
-- Deathmatch: 60 minutes, highest kill count, 30-second respawn. No victory by temporary elimination of the whole opposing team.
-- King hunt: maximum 60 minutes, publicly identified king; first selected player is king. King elimination ends the set early.
-- Ace duel: maximum 60 minutes, highest-role-overall player selected. Opponent elimination ends the set early.
-- Time-limit tie-break: objective/kill score, then summed remaining damage capacity, then seeded draw for an exact tie. This is provisional and should be redesigned for competitive rules.
+자동 저장 위치는 운영체제 앱 데이터 폴더의 `ARENA-Manager`입니다. 실행 파일을 교체해도 같은 저장을 사용합니다. 이전 저장 형식은 선수·예산·기록을 보존해 변환합니다. 기존 저장은 최초 변환 때 별도 브라우저 저장 키에도 백업됩니다. 파일 내보내기/불러오기로 다른 컴퓨터로 옮길 수 있습니다.
 
-## Desktop development and builds
+세트 시작 전과 종료 후에 진행을 저장합니다. 진행 중 종료하면 **현재 세트 준비 단계**부터 다시 시작하며, 앞서 완료한 세트의 결과와 피로는 보존됩니다.
 
-Requires Node.js 22 or later and npm. Run `npm ci`, then `npm start` to launch the desktop game.
+## 개발·빌드
 
-- `npm test`: deterministic battle and season checks.
-- `npm run build:win`: Windows x64 portable executable in `release/`.
-- `npm run build:linux`: Linux x64 AppImage in `release/`.
-- `npm run build:dir`: unpacked application for local verification.
+Node.js 22 이상에서 `npm ci`, `npm start`로 실행합니다.
 
-The game bundles its renderer and portraits and works without an internet connection. Auto-saves live under the operating system application data folder, in `ARENA-Manager`. Export/import JSON saves through the in-game menu to transfer an existing browser save. Replacing the executable does not remove the application data folder. Mid-match saving still restarts the fixture.
+- `npm test`: 경기 엔진, 깃발·리스폰 규칙, 경력 운영, 숨겨진 능력과 고정 초상 ID 검증.
+- `npm run build:win`: `release/v0.3.0/`에 Windows x64 휴대용 실행 파일 생성.
+- `npm run build:linux`: 같은 버전 폴더에 Linux AppImage 생성.
 
-The Windows portable executable is unsigned. Platform-specific visual verification is still required. WebGL hardware acceleration is needed for 3D; textual match simulation can continue when it is unavailable.
+빌드는 버전별 출력 폴더를 비운 뒤 진행해 이전 패키지가 섞이지 않도록 합니다. 배포 파일은 서명되지 않았습니다. Three.js·초상·한글 글꼴을 모두 포함하며 게임 실행에 인터넷 연결은 필요 없습니다. Noto Sans KR의 SIL OFL 라이선스와 Three.js 라이선스는 `dist/assets/`에 포함되어 있습니다.
 
-## Validation
+## 검증과 현재 범위
 
-Windows x64 portable packaging completed. Packaged entrypoint, game modules, Three.js modules and all sixteen portrait files were compared byte-for-byte with source. Actual Windows launch/visual verification is pending.
+60회 종목 시뮬레이션, 12개 시즌과 등장 스케줄, 경기일 진행 제한, 필수 응답, 훈련 부하·성장, 세트별 인원 검증, 이적 완료·최소 로스터, 저장 이관·복원, 100개 고정 초상 ID, 숨겨진 능력 범위와 효과를 검증합니다. 실제 Chromium 화면에서 구단 생성, 전체 메뉴, 훈련 수정, 이벤트 응답, WebGL 경기, 세트 사이 새로고침, 한 경기 완료·회복일, 초상과 관찰 보고서를 확인했습니다. Windows 자체의 실행 검증은 사용자 환경에서 필요합니다.
 
-Engine checks cover all five match modes, finite positions/health, deterministic generation, duplicate-free motif schedules and a complete 14-round season. DOM integration checks covered roster/release/signing, facility upgrades, relationship events, day advancement, tactics, a full best-of-five series, save readback. Actual browser/WebGL visual QA was unavailable in this execution environment.
+현재 대회는 국내 8팀 리그입니다. 여러 디비전의 완전한 승강, 대륙·월드리그, 복잡한 이적 협상, 개인 스태프 경력은 아직 확장 대상입니다. 상대 구단 선수단과 이적은 저장되지만 다른 구단끼리 치르는 경기는 현재 단순 결과 시뮬레이션입니다. 3D 모델과 경기장 이동은 기본적인 전술 관전용 표현입니다.
 
-## Player presentation
+## 디자인 참고
 
-The motif catalog, rarity labels, stars and explicit historical/mythological identity are not shown in the interface. Special behavioral traits use the same profile presentation as other player characteristics. Motif generation, appearance schedules and mechanics remain internal. Old discovery news is normalized on load and import so existing saves do not expose the hidden identity.
+Sports Interactive의 [FM 2023 가이드](https://community.sports-interactive.com/sigames-manual/football-manager-2023/) 중 Training, Inbox and News, Competitions and Fixtures, Playing a Match의 운영 흐름을 검투 종목에 맞춰 참고했습니다.
+
+초상은 내장 이미지 생성 도구로 제작한 오리지널 성인 캐릭터입니다. [생성 프롬프트와 에셋 경로](docs/portrait-prompts.json)에 네 장의 5×5 초상 시트와 선수 ID 매핑을 기록했습니다.
