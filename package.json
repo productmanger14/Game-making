@@ -37,7 +37,9 @@
       "target": "AppImage",
       "category": "Game",
       "artifactName": "ARENA-Manager-${version}-Linux.${ext}"
-    }
+    },
+    "afterPack": "scripts/verify-windows.cjs",
+    "afterSign": "scripts/verify-windows.cjs"
   },
   "devDependencies": {
     "electron": "^44.5.0",

@@ -51,7 +51,7 @@ Node.js 22 이상에서 `npm ci`, `npm start`로 실행합니다.
 - `npm run build:win`: `release/v0.4.0/`에 Windows x64 휴대용 실행 파일 생성.
 - `npm run build:linux`: 같은 버전 폴더에 Linux AppImage 생성.
 
-빌드는 버전별 출력 폴더를 비운 뒤 진행해 이전 패키지가 섞이지 않도록 합니다. 배포 파일은 서명되지 않았습니다. Three.js·초상·한글 글꼴을 모두 포함하며 게임 실행에 인터넷 연결은 필요 없습니다. Noto Sans KR의 SIL OFL 라이선스와 Three.js 라이선스는 `dist/assets/`에 포함되어 있습니다.
+빌드는 버전별 출력 폴더를 비운 뒤 진행해 이전 패키지가 섞이지 않도록 합니다. Windows 실행 엔진과 DLL의 PE 구간을 패키징 전후에 검사하며, 파일이 잘렸으면 빌드를 실패 처리합니다. 배포 파일은 서명되지 않았습니다. Three.js·초상·한글 글꼴을 모두 포함하며 게임 실행에 인터넷 연결은 필요 없습니다. Noto Sans KR의 SIL OFL 라이선스와 Three.js 라이선스는 `dist/assets/`에 포함되어 있습니다.
 
 ## 검증과 현재 범위
 
