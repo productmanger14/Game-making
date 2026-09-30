@@ -84,7 +84,8 @@ try {
   loadError =
     "저장을 읽지 못했습니다. 기존 저장을 내보내 두었다면 불러오기를 사용하세요.";
 }
-let setupActive = !state,
+// Opening the program always starts at registration; loading a career is explicit.
+let setupActive = true,
   setupDraft = {
     country: "한국",
     city: "서울",
@@ -196,7 +197,7 @@ function shell() {
   document.documentElement.style.setProperty("--accent", state.clubColor);
   const locked = series && !series.finished;
   $("#app").innerHTML =
-    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.6.0</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
+    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.6.1</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
   renderContent();
 }
 function renderContent() {
@@ -227,7 +228,7 @@ function renderSetup() {
   const country = countries.find((c) => c.name === setupDraft.country),
     terrain = country.terrains[country.cities.indexOf(setupDraft.city)];
   $("#app").innerHTML =
-    `<main class="onboarding"><div class="onboard-intro"><div class="brand">AR<em>E</em>NA</div><div class="eyebrow">YOUR CLUB. YOUR LEGACY.</div><h1>새 구단의<br>첫 페이지를 열다.</h1><p>연고지를 정하고 선수단을 이끌 감독으로 부임하세요.<br>훈련과 영입을 설계하고, 다섯 종목의 승부를 지휘합니다.</p><div class="onboard-facts"><span>30명 선수단</span><span>8팀 리그</span><span>5판 3선승</span></div><p class="footer-note">기존 저장이 있다면 파일을 불러와 이어갈 수 있습니다.</p><button data-action="import">저장 불러오기</button>${state ? '<button data-action="cancel-setup" class="ghost">현재 구단으로 돌아가기</button>' : ""}<input id="save-file" type="file" accept="application/json" hidden></div><form id="career-form" class="panel setup-form"><div class="eyebrow">CLUB REGISTRATION</div><h2>구단 생성</h2>${loadError ? `<p class="error-text">${esc(loadError)}</p>` : ""}<div class="grid two"><label>참가 국가<select name="country" id="setup-country">${options(
+    `<main class="onboarding"><div class="onboard-intro"><div class="brand">AR<em>E</em>NA</div><div class="eyebrow">YOUR CLUB. YOUR LEGACY.</div><h1>새 구단의<br>첫 페이지를 열다.</h1><p>연고지를 정하고 선수단을 이끌 감독으로 부임하세요.<br>훈련과 영입을 설계하고, 다섯 종목의 승부를 지휘합니다.</p><div class="onboard-facts"><span>30명 선수단</span><span>8팀 리그</span><span>5판 3선승</span></div>${state ? `<section class="saved-career info" aria-label="저장된 구단"><div class="eyebrow">SAVED CAREER</div><strong>${esc(state.club)}</strong><p>${esc(state.country)} · ${esc(state.city)}<br>${esc(state.manager.name)} 감독 · ${formatDate(state)}${series && !series.finished ? `<br>${series.mode + 1}세트 경기 준비부터 재개` : ""}</p><button data-action="continue-career" class="primary full">이어하기</button></section>` : ""}<p class="footer-note">${state ? "새 구단 창단을 완료하기 전까지 기존 저장은 유지됩니다." : "국가와 구단·감독 정보를 입력해 새 경력을 시작하세요."}</p><div class="flex wrap"><button data-action="import">저장 파일 불러오기</button>${state || loadError ? '<button data-action="export" class="ghost">저장 파일 내보내기</button>' : ""}</div><input id="save-file" type="file" accept="application/json" hidden></div><form id="career-form" class="panel setup-form"><div class="eyebrow">CLUB REGISTRATION</div><h2>구단 생성</h2>${loadError ? `<p class="error-text">${esc(loadError)}</p>` : ""}<div class="grid two"><label>참가 국가<select name="country" id="setup-country">${options(
       countries.map((c) => c.name),
       setupDraft.country,
     )}</select></label><label>연고 도시<select name="city" id="setup-city">${options(country.cities, setupDraft.city)}</select></label></div><label>구단 이름<input name="club" required minlength="2" maxlength="30" placeholder="예: ${esc(setupDraft.city)} 이클립스" value="${esc(setupDraft.club)}"></label><div class="grid two"><label>감독 이름<input name="manager" required maxlength="24" placeholder="감독 이름" value="${esc(setupDraft.manager)}"></label><label>감독 나이<input name="age" type="number" min="18" max="80" required value="${setupDraft.age}"></label></div><label>구단 색상<select name="color">${[
@@ -808,7 +809,15 @@ document.addEventListener("submit", (e) => {
   e.preventDefault();
   try {
     const config = Object.fromEntries(new FormData(e.target));
+    if (
+      localStorage.getItem(key) &&
+      !window.confirm(
+        `${state ? `「${state.club}」의` : "기존"} 자동 저장을 새 구단으로 교체할까요? 보관하려면 취소하고 저장 파일을 먼저 내보내세요.`,
+      )
+    )
+      return;
     state = createCareer(config);
+    loadError = "";
     setupActive = false;
     series = null;
     battle = null;
@@ -833,7 +842,7 @@ document.addEventListener("click", (e) => {
   try {
     const d = b.dataset,
       action = d.action,
-      locked = series && !series.finished;
+      locked = !setupActive && series && !series.finished;
     if (
       locked &&
       ![
@@ -1326,19 +1335,22 @@ document.addEventListener("click", (e) => {
       $("#detail").close();
       renderSetup();
     }
-    if (action === "cancel-setup") {
+    if (action === "continue-career" && state) {
       setupActive = false;
+      save();
       shell();
     }
     if (action === "export") {
-      save();
+      if (!setupActive) save();
       const blob = new Blob([localStorage.getItem(key)], {
           type: "application/json",
         }),
         url = URL.createObjectURL(blob),
         a = document.createElement("a");
       a.href = url;
-      a.download = `arena-${state.season}-day${state.day}.json`;
+      a.download = state
+        ? `arena-${state.season}-day${state.day}.json`
+        : "arena-save-recovery.json";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast("저장 파일을 내보냈습니다.");
@@ -1454,6 +1466,7 @@ document.addEventListener("change", async (e) => {
     if (el.id === "save-file" && el.files[0]) {
       const loaded = migrateCareer(JSON.parse(await el.files[0].text()));
       state = loaded;
+      loadError = "";
       setupActive = false;
       series = state.matchSeries || null;
       battle = null;
@@ -1497,5 +1510,4 @@ document.addEventListener("input", (e) => {
   }
 });
 shell();
-if (state) save();
 requestAnimationFrame(loop);
