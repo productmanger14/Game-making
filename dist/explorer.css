@@ -1,0 +1,348 @@
+.explore-summary {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+}
+.explore-summary strong {
+  font-size: 25px;
+  color: var(--text);
+  margin-right: 6px;
+}
+.explore-summary span:last-child {
+  margin-left: auto;
+  font-size: 13px;
+}
+.explore-countries {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.country-card {
+  position: relative;
+  text-align: left;
+  padding: 24px;
+  min-height: 196px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  background: linear-gradient(130deg, #223339, var(--panel));
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.country-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.country-card h2 {
+  margin: 0;
+  font-size: 23px;
+}
+.country-card p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.country-index {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--teal);
+}
+.country-status {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.browse-arrow {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  color: var(--accent);
+  font-size: 20px;
+}
+.explore-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+}
+.breadcrumbs button {
+  padding: 6px 0;
+}
+.breadcrumbs strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.country-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.country-switch select {
+  min-width: 140px;
+}
+.browse-link {
+  font-weight: 600;
+  text-align: left;
+  white-space: normal;
+}
+.browse-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.league-overview {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px;
+}
+.league-overview h2 {
+  font-size: 26px;
+  margin: 7px 0;
+}
+.league-overview p,
+.club-identity p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.round-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.round-progress strong {
+  font-size: 34px;
+  color: var(--accent);
+}
+.round-progress small {
+  font-size: 20px;
+  color: var(--muted);
+}
+.round-progress span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.explore-tabs {
+  display: flex;
+  gap: 9px;
+  margin: 22px 0;
+}
+.round-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.round-picker label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.round-picker select {
+  min-width: 120px;
+}
+.round-picker .muted {
+  margin-left: auto;
+  font-size: 13px;
+}
+.world-match {
+  display: grid;
+  grid-template-columns: 1fr 130px 1fr;
+  gap: 15px;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.world-match:last-child {
+  border-bottom: 0;
+}
+.match-club {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-start;
+}
+.match-club button {
+  font-size: 16px;
+}
+.match-club.home-club {
+  align-items: flex-end;
+}
+.match-club small {
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.world-score {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.world-score strong {
+  font-size: 26px;
+  font-family: var(--display);
+}
+.world-score small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.world-score > span {
+  color: var(--muted);
+}
+.club-overview {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 26px;
+}
+.club-emblem {
+  width: 68px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  background: #314333;
+  border: 1px solid #5c754a;
+  border-radius: 12px 12px 27px 27px;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.club-identity {
+  flex: 1;
+}
+.club-identity h2 {
+  font-size: 24px;
+  margin: 6px 0;
+}
+.club-numbers {
+  display: flex;
+  gap: 24px;
+}
+.club-numbers > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: center;
+}
+.club-numbers strong {
+  font-size: 25px;
+}
+.club-numbers span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.explore-fixture {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.explore-fixture:last-child {
+  border-bottom: 0;
+}
+.explore-fixture .browse-link {
+  font-size: 12px;
+  flex: 1;
+}
+.explore-fixture > strong {
+  white-space: nowrap;
+}
+.small-rating {
+  font-size: 18px;
+}
+.profile-club {
+  color: var(--teal);
+  font-size: 13px;
+}
+@media (max-width: 1200px) {
+  .explore-countries {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .club-overview {
+    flex-wrap: wrap;
+  }
+  .club-numbers {
+    margin-left: auto;
+  }
+  .explore-fixture {
+    flex-wrap: wrap;
+  }
+  .explore-fixture > .muted {
+    width: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .explore-countries {
+    grid-template-columns: 1fr;
+  }
+  .explore-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .world-match {
+    grid-template-columns: 1fr 82px 1fr;
+    padding: 16px 8px;
+    gap: 4px;
+  }
+  .match-club button {
+    font-size: 13px;
+  }
+  .club-numbers {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .explore-summary {
+    gap: 18px;
+  }
+  .explore-summary span:last-child {
+    margin-left: 0;
+  }
+  .round-picker {
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .country-card {
+    min-height: 165px;
+  }
+}
+
+.sidebar {
+  overflow-y: auto;
+}
+.club-mark,
+.club-emblem {
+  font-family: "Noto Sans KR", sans-serif;
+}
+@media (min-width: 901px) and (max-width: 1150px) {
+  .sidebar .brand {
+    font-size: 40px;
+  }
+}

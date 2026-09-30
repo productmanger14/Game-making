@@ -16,279 +16,19 @@ import {
   modes,
   Battle,
   nextFixture,
-  finishFixture,
   advance,
 } from "./engine.js";
 
-export const countries = [
-  {
-    name: "한국",
-    cities: ["서울", "부산", "인천", "대전", "대구", "광주", "수원", "춘천"],
-    terrains: [
-      "city",
-      "city",
-      "city",
-      "city",
-      "mountain",
-      "forest",
-      "city",
-      "snow",
-    ],
-  },
-  {
-    name: "일본",
-    cities: [
-      "도쿄",
-      "오사카",
-      "교토",
-      "삿포로",
-      "후쿠오카",
-      "나고야",
-      "센다이",
-      "나하",
-    ],
-    terrains: [
-      "city",
-      "city",
-      "mountain",
-      "snow",
-      "city",
-      "city",
-      "forest",
-      "forest",
-    ],
-  },
-  {
-    name: "브라질",
-    cities: [
-      "마나우스",
-      "상파울루",
-      "리우",
-      "벨렝",
-      "브라질리아",
-      "헤시피",
-      "쿠리치바",
-      "살바도르",
-    ],
-    terrains: [
-      "forest",
-      "city",
-      "mountain",
-      "forest",
-      "city",
-      "forest",
-      "forest",
-      "city",
-    ],
-  },
-  {
-    name: "스위스",
-    cities: [
-      "취리히",
-      "베른",
-      "제네바",
-      "루체른",
-      "로잔",
-      "인터라켄",
-      "체르마트",
-      "바젤",
-    ],
-    terrains: [
-      "city",
-      "mountain",
-      "city",
-      "mountain",
-      "mountain",
-      "mountain",
-      "snow",
-      "city",
-    ],
-  },
-  {
-    name: "러시아",
-    cities: [
-      "모스크바",
-      "상트페테르부르크",
-      "카잔",
-      "소치",
-      "이르쿠츠크",
-      "옴스크",
-      "페름",
-      "블라디보스토크",
-    ],
-    terrains: [
-      "snow",
-      "snow",
-      "snow",
-      "mountain",
-      "snow",
-      "snow",
-      "forest",
-      "mountain",
-    ],
-  },
-  {
-    name: "미국",
-    cities: [
-      "뉴욕",
-      "시애틀",
-      "덴버",
-      "보스턴",
-      "시카고",
-      "마이애미",
-      "포틀랜드",
-      "솔트레이크",
-    ],
-    terrains: [
-      "city",
-      "forest",
-      "mountain",
-      "city",
-      "snow",
-      "forest",
-      "forest",
-      "mountain",
-    ],
-  },
-  {
-    name: "호주",
-    cities: [
-      "시드니",
-      "멜버른",
-      "브리즈번",
-      "퍼스",
-      "애들레이드",
-      "케언스",
-      "호바트",
-      "캔버라",
-    ],
-    terrains: [
-      "city",
-      "city",
-      "forest",
-      "city",
-      "city",
-      "forest",
-      "mountain",
-      "city",
-    ],
-  },
-  {
-    name: "영국",
-    cities: [
-      "런던",
-      "맨체스터",
-      "버밍엄",
-      "리버풀",
-      "에든버러",
-      "글래스고",
-      "리즈",
-      "브리스틀",
-    ],
-    terrains: [
-      "city",
-      "city",
-      "city",
-      "city",
-      "mountain",
-      "forest",
-      "city",
-      "forest",
-    ],
-  },
-  {
-    name: "프랑스",
-    cities: [
-      "파리",
-      "리옹",
-      "마르세유",
-      "니스",
-      "보르도",
-      "릴",
-      "그르노블",
-      "툴루즈",
-    ],
-    terrains: [
-      "city",
-      "city",
-      "city",
-      "mountain",
-      "forest",
-      "city",
-      "snow",
-      "city",
-    ],
-  },
-  {
-    name: "독일",
-    cities: [
-      "베를린",
-      "뮌헨",
-      "함부르크",
-      "쾰른",
-      "프랑크푸르트",
-      "슈투트가르트",
-      "드레스덴",
-      "프라이부르크",
-    ],
-    terrains: [
-      "city",
-      "mountain",
-      "city",
-      "city",
-      "city",
-      "forest",
-      "city",
-      "forest",
-    ],
-  },
-  {
-    name: "중국",
-    cities: [
-      "베이징",
-      "상하이",
-      "청두",
-      "광저우",
-      "시안",
-      "하얼빈",
-      "쿤밍",
-      "충칭",
-    ],
-    terrains: [
-      "city",
-      "city",
-      "mountain",
-      "forest",
-      "city",
-      "snow",
-      "forest",
-      "mountain",
-    ],
-  },
-  {
-    name: "남아프리카",
-    cities: [
-      "케이프타운",
-      "요하네스버그",
-      "더반",
-      "프리토리아",
-      "음봄벨라",
-      "폴로콰네",
-      "킴벌리",
-      "블룸폰테인",
-    ],
-    terrains: [
-      "mountain",
-      "city",
-      "forest",
-      "city",
-      "forest",
-      "mountain",
-      "city",
-      "city",
-    ],
-  },
-];
+import { countries } from "./countries.js";
+export { countries } from "./countries.js";
+import {
+  ensureWorld,
+  advanceWorld,
+  finishDomesticRound,
+  resetWorldSeason,
+  rankTable,
+} from "./world.js";
+
 export const sessions = {
   균형: {
     keys: ["tech", "teamwork", "endurance"],
@@ -477,6 +217,8 @@ export function migrateCareer(s) {
       text: "일정과 훈련센터가 열렸습니다. 기존 선수·기록·예산을 유지하며, 다음 경기는 일정 화면에서 확인할 수 있습니다.",
     });
   if (s.matchSeries?.phase === "playing") s.matchSeries.phase = "preparation";
+  ensureWorld(s);
+  advanceWorld(s);
   return s;
 }
 export function createCareer(config, seed = Date.now()) {
@@ -861,6 +603,7 @@ export function advanceCareer(s, untilMatch = false) {
     const budget = s.budget;
     advance(s, 1);
     train(s, trainingDay(s));
+    advanceWorld(s);
     if (s.budget < budget) {
       const amount = s.budget - budget;
       s.financeHistory.unshift({
@@ -1029,7 +772,7 @@ export function completeSet(s, series, battle) {
           sender: "리그 뉴스",
         });
     }
-    finishFixture(s, series.wins);
+    finishDomesticRound(s, series.wins);
     normalizeNews(s);
     s.lastMatch = {
       opponent: series.opponent,
@@ -1047,12 +790,8 @@ export function completeSet(s, series, battle) {
 }
 export function nextSeason(s) {
   if (nextFixture(s)) throw Error("남은 경기를 먼저 마쳐야 합니다.");
-  const rank =
-    [...s.table]
-      .sort(
-        (a, b) => b.wins - a.wins || b.for - b.against - (a.for - a.against),
-      )
-      .findIndex((t) => t.id === 0) + 1;
+  const rank = rankTable(s.table).findIndex((t) => t.id === 0) + 1;
+  resetWorldSeason(s);
   s.season++;
   s.day = 0;
   s.round = 0;
@@ -1087,7 +826,7 @@ export function forfeitMatch(s) {
     throw Error("기권할 수 있는 경기일이 아닙니다.");
   if (s.players.filter((p) => !p.injury).length >= 20)
     throw Error("정상 출전 가능한 선수단입니다.");
-  finishFixture(s, [0, 3]);
+  finishDomesticRound(s, [0, 3]);
   normalizeNews(s);
   s.lastMatch = {
     opponent: f.opponent.name,

@@ -533,7 +533,7 @@ export function enemyRoster(s) {
     player(s, { team: 1, level: clamp(Math.floor(s.round / 4), 0, 2) }),
   );
 }
-export function finishFixture(s, result) {
+export function finishFixture(s, result, otherResults = null) {
   const fixture = nextFixture(s);
   if (!fixture) throw Error("시즌이 종료되었습니다.");
   function apply(a, b, sa, sb) {
@@ -551,9 +551,13 @@ export function finishFixture(s, result) {
   for (const [a, b] of s.schedule[s.round]) {
     if (a === 0 || b === 0) apply(0, fixture.opponent.id, result[0], result[1]);
     else {
-      const winner = rand(s) < 0.5;
-      const loss = Math.floor(rand(s) * 3);
-      apply(a, b, winner ? 3 : loss, winner ? loss : 3);
+      const supplied = otherResults?.find((r) => r.home === a && r.away === b);
+      if (supplied) apply(a, b, ...supplied.score);
+      else {
+        const winner = rand(s) < 0.5;
+        const loss = Math.floor(rand(s) * 3);
+        apply(a, b, winner ? 3 : loss, winner ? loss : 3);
+      }
     }
   }
   s.budget += result[0] > result[1] ? 110 : 55;
