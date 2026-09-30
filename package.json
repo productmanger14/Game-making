@@ -1,0 +1,46 @@
+{
+  "name": "arena-manager",
+  "productName": "ARENA Manager",
+  "version": "0.2.0",
+  "description": "현대 검투 구단 매니저 싱글플레이 게임",
+  "author": "ARENA Project",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node scripts/check-engine.mjs && node scripts/check-rules.mjs",
+    "build:win": "electron-builder --win portable --x64",
+    "build:linux": "electron-builder --linux AppImage --x64",
+    "build:dir": "electron-builder --dir"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "build": {
+    "appId": "games.arena.manager",
+    "productName": "ARENA Manager",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": "portable",
+      "artifactName": "ARENA-Manager-${version}-Windows.${ext}"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Game",
+      "artifactName": "ARENA-Manager-${version}-Linux.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.5.0",
+    "electron-builder": "^26.15.3"
+  }
+}

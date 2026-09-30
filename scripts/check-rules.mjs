@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {createWorld,enemyRoster,Battle,modes,DEATHMATCH_RESPAWN} from '../dist/engine.js';
+const state=createWorld(77),rosters=[state.players,enemyRoster(state)];
+assert.ok(modes.every(m=>m.time===3600));
+assert.equal(DEATHMATCH_RESPAWN,180);
+const capture=()=>{const b=new Battle(rosters,1,77);for(const u of b.units){u.x=0;u.z=24;}return b;};
+const b=capture(),runner=b.alive(0)[0],defender=b.alive(1)[0];
+assert.equal(b.flags.length,6);assert.equal(b.flags.filter(f=>f.team===0).length,3);assert.equal(b.flags.filter(f=>f.team===1).length,3);
+const enemyFlags=b.flags.filter(f=>f.team===1),first=enemyFlags[0];
+runner.x=first.home.x;runner.z=first.home.z;b.updateFlags();
+assert.equal(runner.flagId,first.id);assert.equal(first.carrierId,runner.id);assert.equal(b.scores[0],0,'Pickup must not award a capture');
+runner.x=enemyFlags[1].home.x;runner.z=enemyFlags[1].home.z;b.updateFlags();
+assert.equal(enemyFlags[1].carrierId,null,'One flag per carrier');
+b.dropFlag(runner);assert.equal(runner.flagId,null);assert.ok(first.dropped);assert.equal(first.carrierId,null);
+runner.x=0;runner.z=24;defender.x=first.x;defender.z=first.z;b.updateFlags();
+assert.equal(first.dropped,false);assert.deepEqual({x:first.x,z:first.z},first.home,'Own flag returns to original point');
+defender.x=0;defender.z=24;
+for(const flag of enemyFlags){runner.x=flag.home.x;runner.z=flag.home.z;b.updateFlags();assert.equal(runner.flagId,flag.id);runner.x=b.bases[0].x;runner.z=b.bases[0].z;b.updateFlags();assert.equal(flag.capturedBy,0);assert.equal(runner.flagId,null);}
+assert.deepEqual(b.scores,[3,0]);assert.equal(b.winner,0);assert.ok(b.done);assert.equal(runner.objectives,3);
+const recovery=capture(),carrier=recovery.alive(0)[0];carrier.x=recovery.flags[3].x;carrier.z=recovery.flags[3].z;recovery.updateFlags();carrier.alive=false;recovery.updateFlags();assert.ok(recovery.flags[3].dropped);assert.equal(carrier.flagId,null);
+const empty=capture();for(const u of empty.units.filter(u=>u.team===1)){u.alive=false;u.hp=0;}empty.step(.5);assert.equal(empty.done,false,'Capture requires flags, not elimination');
+const timeout=capture();timeout.time=3599.75;timeout.scores=[1,2];timeout.step(.5);assert.equal(timeout.time,3600);assert.equal(timeout.winner,1);
+const dm=new Battle(rosters,2,12),dead=dm.units[0];dead.alive=false;dead.hp=0;dead.respawn=180;
+dm.time=179;dm.step(.5);assert.equal(dead.alive,false);dm.step(.5);assert.equal(dm.time,180);assert.equal(dead.alive,true);assert.equal(dead.hp,100);
+const kills=new Battle(rosters,2,12);kills.time=3599.75;kills.scores=[5,6];for(const u of kills.units){u.cooldown=999;u.x=u.team===0?-30:30;}kills.step(.5);assert.equal(kills.time,3600);assert.equal(kills.winner,1,'Higher kill count wins, regardless of health');
+console.log(JSON.stringify({passed:true,checks:['six-flags','pickup-without-score','one-flag-per-carrier','drop','own-return','base-delivery','three-capture-win','carrier-out','no-elimination-win','60-minute-cap','180-second-respawn','kill-priority']}));

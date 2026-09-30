@@ -1,6 +1,8 @@
 # ARENA — Gladiator Manager
 
-Playable first prototype of a modern, nonmagical gladiator club management game. Korean interface, anime portrait pool, low-poly 3D match viewer. Static ES-module application with vendored Three.js assets. No runtime CDN dependency for the game engine or renderer.
+Windows용 독립 실행 게임입니다. `ARENA-Manager-0.2.0-Windows.exe`를 실행하면 게임이 시작됩니다. 인터넷 연결이나 별도 브라우저가 필요하지 않습니다. 기존 저장은 게임의 저장 파일 내보내기/불러오기로 옮길 수 있습니다.
+
+Playable first prototype of a modern, nonmagical gladiator club management game. Korean interface, anime portrait pool, low-poly 3D match viewer. Standalone Electron desktop application with vendored Three.js assets. No runtime CDN dependency for the game engine or renderer.
 
 ## Implemented
 
@@ -12,7 +14,7 @@ Playable first prototype of a modern, nonmagical gladiator club management game.
 - Four arena environments: urban, jungle, snow, mountain. Snow slows movement, forest reduces distant ranged accuracy, mountain uses balance for mobility. Terrain props currently sit beside movement lanes; there is no full obstacle navigation or line-of-sight solver yet.
 - Eight-team, double round-robin domestic season. Other fixtures simulated per round, table and history, weekly wages, prize revenue.
 - Facilities/staff team upgrades, scout estimates, adult-player affection/trust conversations and consensual relationship state.
-- Browser-local save plus JSON export/import. A match is committed only at the end of the series; reloading mid-match restarts that fixture.
+- Computer-local autosave plus JSON export/import. A match is committed only at the end of the series; reloading mid-match restarts that fixture.
 
 ## Prototype scope
 
@@ -20,7 +22,7 @@ The agreed long-term design includes 24 countries, multiple domestic divisions, 
 
 Portraits use sixteen generated adult-woman portraits assigned consistently to profiles; male generated profiles use a neutral initial avatar. Full individual portraits for all 100 uniques, live AI generation, uniform/age edits and portrait expression variants are not yet implemented. The 3D models are schematic anime-inspired athletes, not detailed character assets.
 
-This is a local single-player save, not a shared/server account. No live image API or credentials are required. Gameplay runs entirely in the browser.
+This is a local single-player save, not a shared/server account. No live image API or credentials are required. Gameplay runs offline in a dedicated desktop window. No website or game server is required.
 
 ## Provisional rules
 
@@ -31,11 +33,22 @@ This is a local single-player save, not a shared/server account. No live image A
 - Ace duel: maximum 60 minutes, highest-role-overall player selected. Opponent elimination ends the set early.
 - Time-limit tie-break: objective/kill score, then summed remaining damage capacity, then seeded draw for an exact tie. This is provisional and should be redesigned for competitive rules.
 
-## Development
+## Desktop development and builds
 
-Serve `dist/` from an ES-module-compatible static HTTP server. `npm install` restores Three.js; the deployed build already contains `dist/assets/three.module.js` and `three.core.js`. Run `node scripts/check-engine.mjs` for deterministic simulation and season invariants and `node scripts/check-rules.mjs` for flag, respawn and time-limit rules. Browser WebGL hardware acceleration is needed for 3D; textual match simulation can continue if it is unavailable.
+Requires Node.js 22 or later and npm. Run `npm ci`, then `npm start` to launch the desktop game.
+
+- `npm test`: deterministic battle and season checks.
+- `npm run build:win`: Windows x64 portable executable in `release/`.
+- `npm run build:linux`: Linux x64 AppImage in `release/`.
+- `npm run build:dir`: unpacked application for local verification.
+
+The game bundles its renderer and portraits and works without an internet connection. Auto-saves live under the operating system application data folder, in `ARENA-Manager`. Export/import JSON saves through the in-game menu to transfer an existing browser save. Replacing the executable does not remove the application data folder. Mid-match saving still restarts the fixture.
+
+The Windows portable executable is unsigned. Platform-specific visual verification is still required. WebGL hardware acceleration is needed for 3D; textual match simulation can continue when it is unavailable.
 
 ## Validation
+
+Windows x64 portable packaging completed. Packaged entrypoint, game modules, Three.js modules and all sixteen portrait files were compared byte-for-byte with source. Actual Windows launch/visual verification is pending.
 
 Engine checks cover all five match modes, finite positions/health, deterministic generation, duplicate-free motif schedules and a complete 14-round season. DOM integration checks covered roster/release/signing, facility upgrades, relationship events, day advancement, tactics, a full best-of-five series, save readback. Actual browser/WebGL visual QA was unavailable in this execution environment.
 
