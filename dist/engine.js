@@ -758,14 +758,28 @@ export class Battle {
     const score = point => danger(point) - 0.12 * Math.hypot(point.x-u.x, point.z-u.z);
     return points.reduce((best, point) => score(point) > score(best) ? point : best);
   }
+  captureRunners(team) {
+    const available = this.alive(team).filter(u => u.flagId === null);
+    const tactic = team === 0 ? this.tactic : "균형";
+    const desired = Math.max(1, Math.ceil(available.length * (tactic === "공격" ? 0.65 : tactic === "수비" ? 0.35 : 0.5)));
+    return available.sort((a,b) =>
+      Number(b.captureRole === "runner") - Number(a.captureRole === "runner") ||
+      b.p.stats.speed - a.p.stats.speed || a.id - b.id).slice(0, desired);
+  }
   flagDestination(u, target, hasEnemy) {
     if (u.flagId !== null) return this.bases[u.team];
     const claim = this.claimingFlag(u);
     if (claim && this.validClaim(claim)) return { x: u.x, z: u.z };
     // Every non-carrier prioritizes recovering a stolen flag. This overrides
     // runner/defender roles and personal combat styles on both teams.
-    if (target?.flagId !== null && target?.flagId !== undefined)
-      return this.interceptDestination(u, target);
+    if (target?.flagId !== null && target?.flagId !== undefined) {
+      const pursuers = this.alive(u.team).filter(a => a.flagId === null)
+        .sort((a,b) => Math.hypot(a.x-target.x,a.z-target.z) - Math.hypot(b.x-target.x,b.z-target.z) || a.id-b.id);
+      // A nearby squad pursues the carrier; the rest protect other flags or
+      // continue the objective instead of abandoning every lane.
+      if (pursuers.slice(0, Math.max(3, Math.ceil(pursuers.length * 0.5))).includes(u))
+        return this.interceptDestination(u, target);
+    }
     if (u.behavior === "escort") {
       const carrier = this.units.find(
         (a) => a !== u && a.alive && a.team === u.team && a.flagId !== null,
@@ -798,7 +812,7 @@ export class Battle {
         Math.hypot(ownDropped.x - u.x, ownDropped.z - u.z) < 5)
     )
       return ownDropped;
-    if (u.captureRole === "runner") {
+    if (!hasEnemy || this.captureRunners(u.team).includes(u)) {
       const available = this.flags.filter(
         (f) =>
           f.team !== u.team && f.capturedBy === null && f.carrierId === null && (f.claimantId === null || f.claimantId === u.id),
@@ -881,6 +895,7 @@ export class Battle {
           flag.z = flag.home.z;
           flag.dropped = false;
           this.clearClaim(flag);
+          defender.flagReturns = (defender.flagReturns || 0) + 1;
           this.log(`${defender.p.name} 아군 깃발 회수`);
           continue;
         }
@@ -1182,6 +1197,8 @@ export class Battle {
             u.kills++;
             this.scores[u.team] += this.modeIndex === 2 ? 1 : 0;
             target.respawn = this.time + DEATHMATCH_RESPAWN;
+            if (target.flagId !== null) u.carrierStops = (u.carrierStops || 0) + 1;
+            if (target.king) u.kingKills = (u.kingKills || 0) + 1;
             this.dropFlag(target);
             for (const [id, t] of Object.entries(target.contributors))
               if (+id !== u.id && this.time - t < 15) {

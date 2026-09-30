@@ -46,19 +46,19 @@ Object.assign(p.seasonRecord, {
   deaths: 20,
   objectives: 4,
 });
-assert.equal(value(p), 69);
+assert.equal(value(p), 77);
 p.record.kills = 100000;
-assert.equal(value(p), 69, "Lifetime exploits must not affect current value");
+assert.equal(value(p), 77, "Lifetime exploits must not affect current value");
 p.fame = 80;
 assert.equal(
   value(p),
-  117,
+  125,
   "Reputation must increase value with identical season stats",
 );
 p.unique = 0;
 assert.equal(
   value(p),
-  140,
+  149,
   "Existing internal motif multiplier remains compatible",
 );
 p.unique = null;

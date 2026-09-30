@@ -68,3 +68,18 @@ for(const team of [0,1]) {
  assert.deepEqual(safe,{x:-30,z:0},'Safe king stays away instead of starting a charge');
 }
 console.log(JSON.stringify({passed:true,checks:['ten-second-stationary-pickup','movement-and-death-interruption','AI-holds-position','dropped-flag-timer','carrier-priority-both-teams','route-interception','king-evasion-both-teams','corner-escape','safe-king-holds','six-flags','base-delivery','three-capture-win','carrier-out','60-minute-capture-cap','10-minute-deathmatch','30-second-respawn','kill-priority']}));
+
+// The objective must still finish when every original runner is gone.
+const fallback = capture();
+for (const u of fallback.units) u.alive = u.team === 0 && u.captureRole === 'defender';
+assert.ok(fallback.alive(0).length > 0);
+assert.ok(fallback.captureRunners(0).length > 0);
+for (let i=0;i<1200 && !fallback.done;i++) fallback.step(.5);
+assert.ok(fallback.done, 'Surviving defenders deliver all flags after enemy elimination');
+assert.equal(fallback.winner,0); assert.equal(fallback.scores[0],3);
+const roles = capture();
+roles.tactic='공격'; const attackCount=roles.captureRunners(0).length;
+roles.tactic='수비'; assert.ok(roles.captureRunners(0).length < attackCount);
+for(const u of roles.alive(0)) if(u.captureRole==='runner') u.alive=false;
+assert.ok(roles.captureRunners(0).every(u=>u.captureRole==='defender'));
+console.log(JSON.stringify({passed:true,checks:['defender-objective-fallback','runner-reassignment','tactic-role-balance']}));

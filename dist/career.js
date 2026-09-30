@@ -757,6 +757,11 @@ export function completeSet(s, series, battle) {
   series.wins[w]++;
   series.results.push(w);
   series.seed = battle.rng.seed;
+  series.lastSetReport = battle.units.filter(u => u.team === 0)
+    .filter(u => u.objectives || u.flagReturns || u.carrierStops || u.kingKills || u.kills >= 3)
+    .map(u => ({name:u.p.name, kills:u.kills, flags:Math.round(u.objectives), returns:u.flagReturns || 0, stops:u.carrierStops || 0, kingKills:u.kingKills || 0}));
+  series.reports ??= [];
+  series.reports.push({ mode: series.mode, players: series.lastSetReport });
   for (const u of battle.units) {
     series.records.push({
       id: u.id,
@@ -769,6 +774,16 @@ export function completeSet(s, series, battle) {
       aceWin: series.mode === 4 && u.team === w,
     });
     const p = series.rosters[u.team].find((p) => p.id === u.id);
+    if (u.team === 0) {
+      const feats = [];
+      if (u.objectives) feats.push(`깃발 운반 ${Math.round(u.objectives)}회`);
+      if (u.flagReturns) feats.push(`아군 깃발 회수 ${u.flagReturns}회`);
+      if (u.carrierStops) feats.push(`적 운반자 저지 ${u.carrierStops}회`);
+      if (u.kingKills) feats.push("상대 왕 탈락");
+      if (series.mode === 4 && u.team === w) feats.push("에이스 결정전 승리");
+      if (u.kills >= 3) feats.push(`${u.kills}킬`);
+      if (feats.length) recordMoment(s, p, "경기", `${series.opponent}전 ${series.mode + 1}세트 ${modes[series.mode].name}: ${feats.join(" · ")}`);
+    }
     p.fatigue = clamp(100 - u.energy + 7, 0, 95);
   }
   if (series.wins[w] >= 3) {
@@ -821,6 +836,7 @@ export function completeSet(s, series, battle) {
     normalizeNews(s);
     s.lastMatch = {
       opponent: series.opponent,
+      reports: series.reports,
       wins: [...series.wins],
       results: [...series.results],
       day: s.day,

@@ -41,7 +41,7 @@ export function valuation(p) {
   const performance =
     (r.kills * 3 +
       r.assists * 1.5 +
-      r.objectives * 0.5 +
+      r.objectives * 8 +
       r.aceWins * 8 -
       r.deaths) /
     Math.max(5, r.games);
