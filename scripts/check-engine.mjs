@@ -11,7 +11,7 @@ for(let seed=1;seed<=12;seed++){
   assert.ok(match.done);assert.ok([0,1].includes(match.winner));
   assert.ok(match.time<=3600);
   assert.ok(match.units.every(u=>Number.isFinite(u.x)&&Number.isFinite(u.z)&&u.hp>=0&&u.hp<=100));
-  if(mode===2){assert.equal(match.time,3600);assert.deepEqual(match.scores,[0,1].map(t=>match.units.filter(u=>u.team===t).reduce((n,u)=>n+u.kills,0)));}
+  if(mode===2){assert.equal(match.time,600);assert.deepEqual(match.scores,[0,1].map(t=>match.units.filter(u=>u.team===t).reduce((n,u)=>n+u.kills,0)));}
   summaries.push({seed,mode,winner:match.winner,time:match.time});
  }
  for(let r=0;r<14;r++)finishFixture(state,[3,r%3]);

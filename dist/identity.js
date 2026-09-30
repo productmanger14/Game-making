@@ -1,3 +1,9 @@
+// Only a valid unique identity selects original artwork. Old portrait indices
+// and portraitKey labels must never grant a generated player unique artwork.
+export function uniquePortrait(p) {
+  if (!Number.isInteger(p.unique) || p.unique < 0 || p.unique >= 100) return null;
+  return { atlas: ["a", "b", "c", "d"][Math.floor(p.unique / 25)], index: p.unique % 25 };
+}
 // Identity has its own deterministic generator: browsing never consumes gameplay RNG.
 export const appearanceParts = ["face", "eyes", "eyebrows", "nose", "mouth", "hairStyle", "hairColor", "eyeColor", "skinTone", "build"];
 function hash(text) {

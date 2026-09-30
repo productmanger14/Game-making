@@ -65,6 +65,8 @@ export const stats = {
 };
 export const SET_TIME_LIMIT = 3600;
 export const DEATHMATCH_RESPAWN = 30;
+export const FLAG_PICKUP_TIME = 10;
+export const DEATHMATCH_TIME_LIMIT = 600;
 export const modes = [
   {
     name: "섬멸전",
@@ -76,19 +78,19 @@ export const modes = [
     name: "기지 점령전",
     n: 20,
     time: SET_TIME_LIMIT,
-    rule: "20 대 20 · 최대 60분 · 양 진영 깃발 3개씩 · 아군 기지로 운반 · 3개 선취 · 리스폰 없음",
+    rule: "20 대 20 · 최대 60분 · 양 진영 깃발 3개씩 · 획득 전 10초 정지 · 운반자 저지 · 아군 기지로 운반 · 3개 선취 · 리스폰 없음",
   },
   {
     name: "데스매치",
     n: 9,
-    time: SET_TIME_LIMIT,
-    rule: "9 대 9 · 60분 · 아웃 후 30초 리스폰 · 킬 수 우선 판정",
+    time: DEATHMATCH_TIME_LIMIT,
+    rule: "9 대 9 · 10분 · 아웃 후 30초 리스폰 · 킬 수 우선 판정",
   },
   {
     name: "왕잡기",
     n: 5,
     time: SET_TIME_LIMIT,
-    rule: "5 대 5 · 최대 60분 · 왕 공개 · 상대 왕 아웃 시 승리",
+    rule: "5 대 5 · 최대 60분 · 왕 공개 · 왕은 회피 우선 · 상대 왕 아웃 시 승리",
   },
   {
     name: "에이스 대결",
@@ -571,6 +573,9 @@ export class Battle {
         carrierId: null,
         capturedBy: null,
         dropped: false,
+        claimantId: null,
+        claimStartedAt: null,
+        claimAnchor: null,
       })),
     );
     this.zones = this.bases;
@@ -714,8 +719,53 @@ export class Battle {
     }
     return fallback;
   }
+  claimingFlag(u) {
+    return this.flags.find(f => f.claimantId === u.id && f.carrierId === null && f.capturedBy === null);
+  }
+  validClaim(flag) {
+    const u = this.units.find(u => u.id === flag.claimantId);
+    return !!u?.alive && u.flagId === null &&
+      Math.hypot(u.x - flag.x, u.z - flag.z) <= 2 &&
+      flag.claimAnchor && Math.hypot(u.x - flag.claimAnchor.x, u.z - flag.claimAnchor.z) <= 0.65;
+  }
+  clearClaim(flag) {
+    flag.claimantId = null;
+    flag.claimStartedAt = null;
+    flag.claimAnchor = null;
+  }
+  interceptDestination(u, carrier) {
+    const distance = Math.hypot(carrier.x - u.x, carrier.z - u.z);
+    const range = u.armed ? weapons[u.p.weapon].range : 1.5;
+    if (distance <= range + 3) return { x: carrier.x, z: carrier.z };
+    const base = this.bases[carrier.team];
+    const dx = base.x - carrier.x, dz = base.z - carrier.z;
+    const length = Math.hypot(dx, dz) || 1;
+    const lead = Math.min(6, length, distance * 0.3);
+    return { x: carrier.x + dx / length * lead, z: carrier.z + dz / length * lead };
+  }
+  kingDestination(u, enemies) {
+    // Kings seek clearance from every enemy, including ranged threats. Never
+    // use their attack target as the movement destination, even when safe.
+    const danger = (point) => Math.min(...enemies.map(e =>
+      Math.hypot(point.x - e.x, point.z - e.z) - (e.armed ? weapons[e.p.weapon].range : 1.5)));
+    if (danger(u) >= 12) return { x: u.x, z: u.z };
+    const points = [{ x: u.x, z: u.z }, u.spawn];
+    for (let i = 0; i < 16; i++) {
+      const angle = i * Math.PI / 8;
+      points.push({ x: clamp(u.x + Math.cos(angle) * 8, -33, 33), z: clamp(u.z + Math.sin(angle) * 8, -23, 23) });
+    }
+    for (const x of [-32, 0, 32]) for (const z of [-22, 0, 22]) points.push({x,z});
+    const score = point => danger(point) - 0.12 * Math.hypot(point.x-u.x, point.z-u.z);
+    return points.reduce((best, point) => score(point) > score(best) ? point : best);
+  }
   flagDestination(u, target, hasEnemy) {
     if (u.flagId !== null) return this.bases[u.team];
+    const claim = this.claimingFlag(u);
+    if (claim && this.validClaim(claim)) return { x: u.x, z: u.z };
+    // Every non-carrier prioritizes recovering a stolen flag. This overrides
+    // runner/defender roles and personal combat styles on both teams.
+    if (target?.flagId !== null && target?.flagId !== undefined)
+      return this.interceptDestination(u, target);
     if (u.behavior === "escort") {
       const carrier = this.units.find(
         (a) => a !== u && a.alive && a.team === u.team && a.flagId !== null,
@@ -751,7 +801,7 @@ export class Battle {
     if (u.captureRole === "runner") {
       const available = this.flags.filter(
         (f) =>
-          f.team !== u.team && f.capturedBy === null && f.carrierId === null,
+          f.team !== u.team && f.capturedBy === null && f.carrierId === null && (f.claimantId === null || f.claimantId === u.id),
       );
       if (available.length) return available[u.lane % available.length];
       const carrier = this.units.find(
@@ -787,6 +837,7 @@ export class Battle {
       flag.x = u.x;
       flag.z = u.z;
       flag.dropped = true;
+      this.clearClaim(flag);
       this.log(`${u.p.name} 아웃 — 깃발이 지면에 떨어졌습니다.`);
     }
     u.flagId = null;
@@ -794,6 +845,7 @@ export class Battle {
   updateFlags() {
     for (const flag of this.flags) {
       if (flag.capturedBy !== null) continue;
+      if (flag.claimantId !== null && !this.validClaim(flag)) this.clearClaim(flag);
       if (flag.carrierId !== null) {
         const carrier = this.units.find((u) => u.id === flag.carrierId);
         if (!carrier?.alive) {
@@ -828,14 +880,16 @@ export class Battle {
           flag.x = flag.home.x;
           flag.z = flag.home.z;
           flag.dropped = false;
+          this.clearClaim(flag);
           this.log(`${defender.p.name} 아군 깃발 회수`);
           continue;
         }
       }
-      const thief = this.alive(1 - flag.team)
+      const claimant = this.units.find(u => u.id === flag.claimantId);
+      const thief = claimant || this.alive(1 - flag.team)
         .filter(
           (u) =>
-            u.flagId === null && Math.hypot(u.x - flag.x, u.z - flag.z) <= 2,
+            u.flagId === null && !this.claimingFlag(u) && Math.hypot(u.x - flag.x, u.z - flag.z) <= 2,
         )
         .sort(
           (a, b) =>
@@ -843,6 +897,14 @@ export class Battle {
             Math.hypot(b.x - flag.x, b.z - flag.z),
         )[0];
       if (thief) {
+        if (flag.claimantId === null) {
+          flag.claimantId = thief.id;
+          flag.claimStartedAt = this.time;
+          flag.claimAnchor = { x: thief.x, z: thief.z };
+          this.log(`${thief.p.name} 깃발 획득 준비 — 10초 동안 위치 유지`);
+        }
+        if (this.time - flag.claimStartedAt < FLAG_PICKUP_TIME) continue;
+        this.clearClaim(flag);
         thief.flagId = flag.id;
         flag.carrierId = thief.id;
         flag.dropped = false;
@@ -859,6 +921,8 @@ export class Battle {
     dt = Math.min(dt, this.mode.time - this.time);
     this.time += dt;
     this.events = this.events.filter((e) => this.time - e.time < 1);
+    if (this.modeIndex === 1) for (const flag of this.flags)
+      if (flag.claimantId !== null && !this.validClaim(flag)) this.clearClaim(flag);
     for (const u of this.units) {
       u.animation = Math.max(0, u.animation - dt);
       if (!u.alive) {
@@ -901,6 +965,13 @@ export class Battle {
         if (this.instructions.target === "원거리" && near.length)
           target = near.find((e) => weapons[e.p.weapon].range > 10) || target;
       }
+      if (this.modeIndex === 1 && u.flagId === null) {
+        const carriers = enemies.filter(e => e.flagId !== null);
+        if (carriers.length) target = carriers.reduce((a,b) =>
+          Math.hypot(a.x-u.x,a.z-u.z) < Math.hypot(b.x-u.x,b.z-u.z) ? a : b);
+      }
+      if (this.modeIndex === 3 && u.king) target = enemies.reduce((a,b) =>
+        Math.hypot(a.x-u.x,a.z-u.z) < Math.hypot(b.x-u.x,b.z-u.z) ? a : b);
       u.targetId = target.id;
       let tx = target.x,
         tz = target.z;
@@ -942,9 +1013,11 @@ export class Battle {
           objectiveMove = true;
         }
       }
-      if (this.modeIndex === 3 && u.king && dist < 10) {
-        tx = u.spawn.x;
-        tz = u.spawn.z;
+      if (this.modeIndex === 3 && u.king) {
+        const safe = this.kingDestination(u, enemies);
+        tx = safe.x;
+        tz = safe.z;
+        objectiveMove = true;
       }
       let move = Math.hypot(tx - u.x, tz - u.z);
       const attackDist = Math.hypot(target.x - u.x, target.z - u.z);
@@ -997,8 +1070,9 @@ export class Battle {
         if (u.flagId !== null) speed *= 0.85;
         const dx = (tx - u.x) / Math.max(0.01, move),
           dz = (tz - u.z) / Math.max(0.01, move);
-        u.x = clamp(u.x + dx * speed * dt, -34, 34);
-        u.z = clamp(u.z + dz * speed * dt, -24, 24);
+        const travel = Math.min(move, speed * dt);
+        u.x = clamp(u.x + dx * travel, -34, 34);
+        u.z = clamp(u.z + dz * travel, -24, 24);
         u.energy = Math.max(
           5,
           u.energy -

@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import { createWorld, player } from '../dist/engine.js';
 import { createCareer, migrateCareer, nextSeason } from '../dist/career.js';
-import { appearanceParts, ensureIdentity, portraitSVG, journal, writeJournal, recordMoment, background } from '../dist/identity.js';
+import { appearanceParts, ensureIdentity, portraitSVG, journal, writeJournal, recordMoment, background, uniquePortrait } from '../dist/identity.js';
 import { clubRoster, leagueId } from '../dist/world.js';
+for (const value of [undefined, null, false, true, "0", -1, 100, 1.5])
+ assert.equal(uniquePortrait({unique:value,portrait:0,portraitKey:'special-0'}),null);
+const atlasCells=new Set();
+for(let i=0;i<100;i++) {
+ const art=uniquePortrait({unique:i});
+ assert.deepEqual(art,{atlas:['a','b','c','d'][Math.floor(i/25)],index:i%25});
+ atlasCells.add(`${art.atlas}:${art.index}`);
+}
+assert.equal(atlasCells.size,100);
 const s = createCareer({ country:'한국', city:'서울', club:'기록 구단', manager:'감독', age:30 }, 2468);
 const p = s.players[0], seed = s.seed;
 const original = structuredClone(ensureIdentity(p));
@@ -16,6 +25,7 @@ const sample = { seed: 23456, nextId: 1, season: 2026 };
 const distribution = Object.fromEntries(appearanceParts.map(k=>[k,new Set()]));
 for(let i=0;i<4000;i++) {
  const candidate=player(sample);
+ assert.equal(uniquePortrait(candidate),null);
  for(const k of appearanceParts) distribution[k].add(candidate.appearance.design[k]);
 }
 for(const k of appearanceParts) assert.equal(distribution[k].size, 32, k);
@@ -51,4 +61,4 @@ for(let i=0;i<120;i++) { s.day=i; recordMoment(s,p,'대화',`대화 ${i}`); }
 assert.equal(journal(s,p).events.length,100);
 assert.equal(journal(s,p).events[0].text,'대화 119');
 assert.equal(background(p),background({...p,age:p.age+1}));
-console.log(JSON.stringify({passed:true,checks:['32-options-per-part','32-rendered-variants-per-part','deterministic-no-rng-consumption','legacy-migration','save-reload','foreign-object-regeneration','transfer-continuity','deduplicated-bounded-timeline','memo-limit']}));
+console.log(JSON.stringify({passed:true,checks:['unique-only-artwork','100-distinct-atlas-cells','legacy-portrait-index-is-not-unique','32-options-per-part','32-rendered-variants-per-part','deterministic-no-rng-consumption','legacy-migration','save-reload','foreign-object-regeneration','transfer-continuity','deduplicated-bounded-timeline','memo-limit']}));

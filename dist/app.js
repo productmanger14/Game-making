@@ -1,4 +1,4 @@
-import { portraitSVG, journal, writeJournal, recordMoment, background } from "./identity.js";
+import { portraitSVG, journal, writeJournal, recordMoment, background, uniquePortrait } from "./identity.js";
 import {
   setSkillTraining,
   forgetSkill,
@@ -118,9 +118,9 @@ const date = () => formatDate(state),
   clock = (t) =>
     `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 const portrait = (p, cls = "portrait") => {
-  if (p.unique != null) {
-    const index = p.unique % 25,
-      atlas = ["a", "b", "c", "d"][Math.floor(p.unique / 25)];
+  const special = uniquePortrait(p);
+  if (special) {
+    const { index, atlas } = special;
     return `<div class="${cls} atlas-portrait" role="img" aria-label="${esc(p.name)} 초상화" style="--portrait-atlas:url('assets/portraits-${atlas}.png');--portrait-x:${(index % 5) * 25}%;--portrait-y:${Math.floor(index / 5) * 25}%"></div>`;
   }
   return `<div class="${cls} generated-portrait">${portraitSVG(p)}</div>`;
@@ -475,13 +475,13 @@ function renderLive(c) {
       `${series.mode + 1}세트 · ${modes[series.mode].name}`,
       `${terrainInfo[series.terrain].name} 아레나 · ${modes[series.mode].rule}`,
     ) +
-    `<div class="arena-layout"><section class="panel battle-panel"><div class="match-strip"><strong>${esc(state.club)}</strong><div class="match-score" id="match-score">${series.wins.join(" : ")}</div><strong>${esc(series.opponent)}</strong></div><div class="panel-head"><div class="set-chips">${modes.map((m, i) => `<span class="set-chip ${i === series.mode ? "current" : ""} ${series.results[i] === 0 ? "win" : series.results[i] === 1 ? "loss" : ""}">${i + 1} ${m.name}</span>`).join("")}</div><span id="timer">00:00 / 60:00</span></div><div class="viewport" id="viewport"><div class="arena-overlay"><span class="pill teal">${modes[series.mode].n} : ${modes[series.mode].n}</span></div><div class="arena-bottom" id="arena-count"></div><div class="camera-controls"><button data-camera="rotate">회전</button><button data-camera="in">＋</button><button data-camera="out">－</button></div></div><div class="arena-controls"><div class="controls-left"><button data-action="pause" id="pause">일시정지</button><select id="speed" aria-label="재생 속도">${[1, 4, 12, 32, 64].map((x) => `<option value="${x}" ${speed === x ? "selected" : ""}>${x}배속</option>`).join("")}</select><button data-action="quick">이 세트 결과까지</button></div><strong id="live-score"></strong></div><div class="panel-head"><h2>실시간 중계</h2></div><div class="log" id="log"></div></section><aside class="side-stack"><section class="panel panel-body"><h2>경기 중 전술</h2><select id="live-tactic" class="full">${options(["균형", "공격", "수비"], battle.tactic)}</select><p class="muted">명단 교체는 세트가 끝난 뒤 가능합니다.</p></section><section class="panel"><div class="panel-head"><h2>출전 선수</h2></div><div id="status-list" class="status-list"></div></section></aside></div>`;
+    `<div class="arena-layout"><section class="panel battle-panel"><div class="match-strip"><strong>${esc(state.club)}</strong><div class="match-score" id="match-score">${series.wins.join(" : ")}</div><strong>${esc(series.opponent)}</strong></div><div class="panel-head"><div class="set-chips">${modes.map((m, i) => `<span class="set-chip ${i === series.mode ? "current" : ""} ${series.results[i] === 0 ? "win" : series.results[i] === 1 ? "loss" : ""}">${i + 1} ${m.name}</span>`).join("")}</div><span id="timer">${clock(battle.time)} / ${clock(battle.mode.time)}</span></div><div class="viewport" id="viewport"><div class="arena-overlay"><span class="pill teal">${modes[series.mode].n} : ${modes[series.mode].n}</span></div><div class="arena-bottom" id="arena-count"></div><div class="camera-controls"><button data-camera="rotate">회전</button><button data-camera="in">＋</button><button data-camera="out">－</button></div></div><div class="arena-controls"><div class="controls-left"><button data-action="pause" id="pause">일시정지</button><select id="speed" aria-label="재생 속도">${[1, 4, 12, 32, 64].map((x) => `<option value="${x}" ${speed === x ? "selected" : ""}>${x}배속</option>`).join("")}</select><button data-action="quick">이 세트 결과까지</button></div><strong id="live-score"></strong></div><div class="panel-head"><h2>실시간 중계</h2></div><div class="log" id="log"></div></section><aside class="side-stack"><section class="panel panel-body"><h2>경기 중 전술</h2><select id="live-tactic" class="full">${options(["균형", "공격", "수비"], battle.tactic)}</select><p class="muted">명단 교체는 세트가 끝난 뒤 가능합니다.</p></section><section class="panel"><div class="panel-head"><h2>출전 선수</h2></div><div id="status-list" class="status-list"></div></section></aside></div>`;
   mountArena();
   updateMatchUI();
 }
 function updateMatchUI() {
   if (tab !== "command" || !battle || series?.phase !== "playing") return;
-  if ($("#timer")) $("#timer").textContent = clock(battle.time) + " / 60:00";
+  if ($("#timer")) $("#timer").textContent = clock(battle.time) + " / " + clock(battle.mode.time);
   if ($("#pause")) $("#pause").textContent = running ? "일시정지" : "재생";
   if ($("#log"))
     $("#log").innerHTML = battle.logs
@@ -503,7 +503,7 @@ function updateMatchUI() {
       .filter((u) => u.team === 0)
       .map(
         (u) =>
-          `<div class="status-row ${u.alive ? "" : "out"}"><strong>${esc(u.p.name)}${u.king ? " ♛" : ""}</strong><div class="bars"><div class="bar"><i style="width:${u.hp}%;background:var(--accent)"></i></div><div class="bar"><i style="width:${u.energy}%"></i></div></div><span>${!u.alive ? (series.mode === 2 ? clock(Math.max(0, u.respawn - battle.time)) : "OUT") : u.flagId !== null ? "깃발" : !u.armed ? "맨손" : u.kills + "K"}</span></div>`,
+          `<div class="status-row ${u.alive ? "" : "out"}"><strong>${esc(u.p.name)}${u.king ? " ♛" : ""}</strong><div class="bars"><div class="bar"><i style="width:${u.hp}%;background:var(--accent)"></i></div><div class="bar"><i style="width:${u.energy}%"></i></div></div><span>${!u.alive ? (series.mode === 2 ? clock(Math.max(0, u.respawn - battle.time)) : "OUT") : u.flagId !== null ? "깃발" : battle.claimingFlag(u) ? `획득 ${Math.min(10, Math.floor(battle.time - battle.claimingFlag(u).claimStartedAt))}/10초` : !u.armed ? "맨손" : u.kills + "K"}</span></div>`,
       )
       .join("");
 }
