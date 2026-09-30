@@ -1,7 +1,7 @@
 {
   "name": "arena-manager",
   "productName": "ARENA Manager",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "현대 검투 구단 매니저 싱글플레이 게임",
   "author": "ARENA Project",
   "private": true,

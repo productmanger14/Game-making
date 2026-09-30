@@ -3,11 +3,11 @@ export const roles=['선봉','수비','돌격','기동','견제','사격','호�
 export const weapons=[{name:'검·방패',range:2.5,damage:14,guard:4},{name:'양손검',range:3.3,damage:20,guard:0},{name:'쌍검',range:2.2,damage:15,guard:0},{name:'창',range:4.8,damage:16,guard:1},{name:'장궁',range:18,damage:12,guard:-2},{name:'전투망치',range:2.5,damage:23,guard:0},{name:'곡도',range:2.8,damage:16,guard:1},{name:'채찍',range:6.5,damage:10,guard:-1},{name:'연검',range:5,damage:14,guard:0},{name:'장봉',range:4,damage:12,guard:2},{name:'석궁',range:20,damage:21,guard:-2},{name:'사슬낫',range:5.5,damage:15,guard:-1}];
 export const stats={tech:'기술',accuracy:'정확도',defense:'방어',dodge:'회피',grapple:'격투',disarm:'무장 해제',strength:'힘',endurance:'지구력',speed:'이동 속도',accel:'가속력',agility:'민첩성',balance:'균형감각',judgment:'판단력',prediction:'예측력',focus:'집중력',calm:'침착성',spirit:'투지',tactics:'전술 이해',teamwork:'팀워크',position:'위치 선정',awareness:'상황 인식',leadership:'리더십'};
 export const SET_TIME_LIMIT=3600;
-export const DEATHMATCH_RESPAWN=180;
+export const DEATHMATCH_RESPAWN=30;
 export const modes=[
  {name:'섬멸전',n:11,time:SET_TIME_LIMIT,rule:'11 대 11 · 최대 60분 · 리스폰 없음 · 상대 전원 아웃'},
  {name:'기지 점령전',n:20,time:SET_TIME_LIMIT,rule:'20 대 20 · 최대 60분 · 양 진영 깃발 3개씩 · 아군 기지로 운반 · 3개 선취 · 리스폰 없음'},
- {name:'데스매치',n:9,time:SET_TIME_LIMIT,rule:'9 대 9 · 60분 · 아웃 후 3분 리스폰 · 킬 수 우선 판정'},
+ {name:'데스매치',n:9,time:SET_TIME_LIMIT,rule:'9 대 9 · 60분 · 아웃 후 30초 리스폰 · 킬 수 우선 판정'},
  {name:'왕잡기',n:5,time:SET_TIME_LIMIT,rule:'5 대 5 · 최대 60분 · 왕 공개 · 상대 왕 아웃 시 승리'},
  {name:'에이스 대결',n:1,time:SET_TIME_LIMIT,rule:'1 대 1 · 최대 60분 · 상대 아웃 시 승리'}
 ];
