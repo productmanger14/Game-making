@@ -4,6 +4,7 @@ import {
   purchase,
   rollFinanceSeason,
 } from "./finance.js";
+import { ensureSeasonRecord, recordSet } from "./valuation.js";
 import {
   ensurePlayerAttributes,
   matchReadiness,
@@ -170,6 +171,7 @@ export function migrateCareer(s) {
     )
       throw Error("선수 데이터가 올바르지 않습니다.");
   const legacy = !s.careerVersion;
+  const valuationUpgrade = !s.valuationVersion;
   s.version = 2;
   s.careerVersion = 2;
   s.country ??= "한국";
@@ -214,10 +216,19 @@ export function migrateCareer(s) {
     ...Object.values(s.opponentSquads).flat(),
   ]) {
     ensurePlayerAttributes(p);
+    ensureSeasonRecord(p, s.season, s.season === 2026);
     p.trainingFocus ??= "균형";
     p.trainingXP ??= {};
   }
   normalizeNews(s);
+  if (valuationUpgrade && s.players.some((p) => p.seasonRecord.partial))
+    addNews(s, {
+      category: "이적",
+      title: "시즌 실적 기반 선수 평가",
+      text: "몸값은 이번 시즌 실적과 명성으로 평가합니다. 이전 저장에는 시즌별 기록이 없어 통산 기록을 보존하고, 해당 선수의 시즌 실적은 업데이트 이후부터 집계합니다. 명성은 유지됩니다.",
+      sender: "스카우트 팀",
+    });
+  s.valuationVersion = 1;
   if (legacy)
     addNews(s, {
       title: "운영 센터 개편",
@@ -729,11 +740,7 @@ export function completeSet(s, series, battle) {
         r.team === 0 ? s.players : s.opponentSquads[series.opponentId]
       ).find((p) => p.id === r.id);
       if (!p) continue;
-      p.record.games++;
-      for (const k of ["kills", "deaths", "assists", "objectives"])
-        p.record[k] += r[k];
-      p.record.aceWins += r.aceWin ? 1 : 0;
-      p.fame = Math.min(100, p.fame + (r.kills ? 1 : 0));
+      recordSet(p, s.season, { ...r, games: 1, aceWins: r.aceWin ? 1 : 0 });
       p.fatigue = series.rosters[r.team].find((x) => x.id === p.id).fatigue;
       p.condition = 100 - p.fatigue;
     }
@@ -805,6 +812,7 @@ export function nextSeason(s) {
     ...s.youth,
     ...Object.values(s.opponentSquads).flat(),
   ]) {
+    ensureSeasonRecord(p, s.season);
     p.age++;
     if (p.age >= 30)
       for (const k of ["speed", "accel", "agility"])
@@ -813,7 +821,7 @@ export function nextSeason(s) {
   addNews(s, {
     category: "경기",
     title: "새 시즌 일정 확정",
-    text: `지난 시즌 ${rank}위. 14경기 일정이 공개되었습니다. 현재는 같은 8팀으로 다음 시즌을 진행합니다.`,
+    text: `지난 시즌 ${rank}위. 14경기 일정이 공개되었습니다. 이번 시즌 실적은 새로 집계하며, 몸값은 새 시즌 실적과 유지된 명성으로 평가합니다. 통산 기록은 선수 상세에서 확인할 수 있습니다. 현재는 같은 8팀으로 다음 시즌을 진행합니다.`,
     sender: "리그 사무국",
   });
 }

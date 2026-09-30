@@ -1,3 +1,4 @@
+import { seasonStats } from "./valuation.js";
 import { purchase, signSponsor, setTicketPrice } from "./finance.js";
 import { financeHTML, newFinanceView } from "./finance-view.js";
 import { explorerHTML, newExplorer } from "./explorer.js";
@@ -187,7 +188,7 @@ function shell() {
   document.documentElement.style.setProperty("--accent", state.clubColor);
   const locked = series && !series.finished;
   $("#app").innerHTML =
-    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.5.0</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
+    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.5.1</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
   renderContent();
 }
 function renderContent() {
@@ -401,7 +402,7 @@ function renderRoster(c) {
       `${state.players.length} / 30명 등록 · 경기 준비에서 종목별 출전 명단을 제출합니다.`,
       `<button data-nav="tactics">전술 · 명단 설정</button>`,
     ) +
-    `<div class="filters"><input id="roster-search" placeholder="선수 이름 검색" value="${esc(rosterFilter)}"><select id="role-filter"><option value="">모든 포지션</option>${options(roles, roleFilter)}</select></div><section class="panel table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>무기</th><th>OVR</th><th>컨디션</th><th>K / D / A</th><th>추정가</th><th></th></tr></thead><tbody>${list.map((p) => playerRow(p)).join("")}</tbody></table></section>`;
+    `<div class="filters"><input id="roster-search" placeholder="선수 이름 검색" value="${esc(rosterFilter)}"><select id="role-filter"><option value="">모든 포지션</option>${options(roles, roleFilter)}</select></div><section class="panel table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>무기</th><th>OVR</th><th>컨디션</th><th>시즌 K / D / A</th><th>추정가</th><th></th></tr></thead><tbody>${list.map((p) => playerRow(p)).join("")}</tbody></table></section>`;
 }
 function planMode() {
   return series && !series.finished ? series.mode : tacticsMode;
@@ -585,7 +586,8 @@ function renderFinance(c) {
 }
 
 function playerRow(p, opts = {}) {
-  return `<tr><td><button class="ghost player-name" data-player="${p.id}">${portrait(p)}<span><strong>${esc(p.name)}</strong><small>${p.country} · ${p.age}세</small></span></button></td><td>${p.role}</td><td>${weapons[p.weapon].name}</td><td><span class="rating">${overall(p)}</span></td><td><span>${Math.round(100 - p.fatigue)}%</span><div class="bar"><i style="width:${100 - p.fatigue}%"></i></div></td><td>${p.record.kills} / ${p.record.deaths} / ${p.record.assists}</td><td>${value(p)}백만</td><td>${opts.lineup ? `<button class="lineup-btn ${selected.has(p.id) ? "selected" : ""}" data-select="${p.id}">${selected.has(p.id) ? "출전 우선" : "대기"}</button>` : opts.youth ? `<button class="lineup-btn" data-promote="${p.id}" ${state.players.length >= 30 ? "disabled" : ""}>1군 승격</button>` : ""}</td></tr>`;
+  const r = seasonStats(p);
+  return `<tr><td><button class="ghost player-name" data-player="${p.id}">${portrait(p)}<span><strong>${esc(p.name)}</strong><small>${p.country} · ${p.age}세</small></span></button></td><td>${p.role}</td><td>${weapons[p.weapon].name}</td><td><span class="rating">${overall(p)}</span></td><td><span>${Math.round(100 - p.fatigue)}%</span><div class="bar"><i style="width:${100 - p.fatigue}%"></i></div></td><td>${r.kills} / ${r.deaths} / ${r.assists}</td><td>${value(p)}백만</td><td>${opts.lineup ? `<button class="lineup-btn ${selected.has(p.id) ? "selected" : ""}" data-select="${p.id}">${selected.has(p.id) ? "출전 우선" : "대기"}</button>` : opts.youth ? `<button class="lineup-btn" data-promote="${p.id}" ${state.players.length >= 30 ? "disabled" : ""}>1군 승격</button>` : ""}</td></tr>`;
 }
 function estimate(p) {
   const confidence = Math.min(
@@ -611,7 +613,7 @@ function renderMarket(c) {
     title(
       "RECRUITMENT",
       "이적 · 자유계약 시장",
-      "경기 실적과 스카우트 보고서를 비교해 영입하세요.",
+      "이번 시즌 실적·명성과 스카우트 보고서를 비교해 영입하세요.",
       `<span class="pill">남은 등록 자리 ${30 - state.players.length}</span>`,
     ) +
     `<div class="filters"><input id="market-search" placeholder="이름 또는 국적 검색" aria-label="시장 선수 검색" value="${esc(marketFilter)}"><button data-action="scout-event">지역 인재 탐색 · 12백만</button></div><div class="grid four">${
@@ -659,7 +661,7 @@ function renderFacilities(c) {
       )
       .join(
         "",
-      )}</div></section><section class="panel section-gap"><div class="panel-head"><h2>유스 선수단 · ${state.youth.length}명</h2><button data-action="youth-recruit">유망주 모집 · 25백만</button></div><div class="table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>무기</th><th>OVR</th><th>컨디션</th><th>K / D / A</th><th>평가액</th><th>승격</th></tr></thead><tbody>${state.youth.map((p) => playerRow(p, { youth: true })).join("")}</tbody></table></div></section><p class="footer-note">생활관·환경 훈련장·장비 공방 등 전체 시설 구성과 스태프 개인 경력은 이후 확장 대상입니다. 매주 급료와 시설 유지비가 지출됩니다.</p>`;
+      )}</div></section><section class="panel section-gap"><div class="panel-head"><h2>유스 선수단 · ${state.youth.length}명</h2><button data-action="youth-recruit">유망주 모집 · 25백만</button></div><div class="table-scroll"><table><thead><tr><th>선수</th><th>역할</th><th>무기</th><th>OVR</th><th>컨디션</th><th>시즌 K / D / A</th><th>평가액</th><th>승격</th></tr></thead><tbody>${state.youth.map((p) => playerRow(p, { youth: true })).join("")}</tbody></table></div></section><p class="footer-note">생활관·환경 훈련장·장비 공방 등 전체 시설 구성과 스태프 개인 경력은 이후 확장 대상입니다. 매주 급료와 시설 유지비가 지출됩니다.</p>`;
 }
 function renderExplorer(c) {
   c.innerHTML = explorerHTML(state, explorer, {
@@ -732,6 +734,7 @@ function findPlayer(id) {
   );
 }
 function detail(p, context = {}) {
+  const r = seasonStats(p);
   const market = state.market.includes(p),
     youth = state.youth.includes(p),
     e = estimate(p),
@@ -746,7 +749,7 @@ function detail(p, context = {}) {
       Math.round(p.pa / 2 + (100 - e.confidence) * 0.2),
     );
   openDialog(
-    `<div class="detail-grid"><div>${portrait(p, "portrait large")}<div class="trait"><strong>${p.unique != null ? uniques[p.unique].trait.name : p.personality}</strong><p>${p.unique != null ? uniques[p.unique].trait.text : "훈련과 경기 경험을 통해 자신만의 경력을 쌓습니다."}</p></div><div class="detail-meta">${p.country} · ${p.sex} · ${p.age}세<br>${p.appearance.height}cm</div></div><div><div class="eyebrow">PLAYER PROFILE</div><h2>${esc(p.name)}</h2>${context.club ? `<p class="profile-club">${esc(context.club)} · ${external ? "다른 구단 소속" : "내 구단"}</p>` : ""}<p class="muted">${p.role} · ${weapons[p.weapon].name} · 무기 숙련 ${p.mastery}/20</p><div class="grid three"><div class="panel stat-card"><p>역할 OVR</p><div class="value">${estimated ? `${Math.max(1, overall(p) - Math.round((100 - e.confidence) / 15))}–${Math.min(100, overall(p) + Math.round((100 - e.confidence) / 15))}` : overall(p)}</div></div><div class="panel stat-card"><p>잠재력 평가</p><div class="value">${potentialMin}–${potentialMax}</div></div><div class="panel stat-card"><p>시장 추정가</p><div class="value">${value(p)}</div><p>백만원</p></div></div><div class="stats-grid section-gap">${Object.entries(
+    `<div class="detail-grid"><div>${portrait(p, "portrait large")}<div class="trait"><strong>${p.unique != null ? uniques[p.unique].trait.name : p.personality}</strong><p>${p.unique != null ? uniques[p.unique].trait.text : "훈련과 경기 경험을 통해 자신만의 경력을 쌓습니다."}</p></div><div class="detail-meta">${p.country} · ${p.sex} · ${p.age}세<br>${p.appearance.height}cm</div></div><div><div class="eyebrow">PLAYER PROFILE</div><h2>${esc(p.name)}</h2>${context.club ? `<p class="profile-club">${esc(context.club)} · ${external ? "다른 구단 소속" : "내 구단"}</p>` : ""}<p class="muted">${p.role} · ${weapons[p.weapon].name} · 무기 숙련 ${p.mastery}/20</p><div class="grid three"><div class="panel stat-card"><p>역할 OVR</p><div class="value">${estimated ? `${Math.max(1, overall(p) - Math.round((100 - e.confidence) / 15))}–${Math.min(100, overall(p) + Math.round((100 - e.confidence) / 15))}` : overall(p)}</div></div><div class="panel stat-card"><p>잠재력 평가</p><div class="value">${potentialMin}–${potentialMax}</div></div><div class="panel stat-card"><p>시장 추정가</p><div class="value">${estimated ? `${e.low}–${e.high}` : value(p)}</div><p>백만원 · 시즌 실적·명성</p></div></div><div class="stats-grid section-gap">${Object.entries(
       stats,
     )
       .map(
@@ -755,7 +758,7 @@ function detail(p, context = {}) {
       )
       .join(
         "",
-      )}</div><p class="muted">${p.record.games}세트 출전 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 명성 ${p.fame}</p><section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
+      )}</div><section class="info section-gap season-report"><strong>${state.season} 시즌 기록${r.partial ? " · 업데이트 이후" : ""}</strong><p>${r.games}세트 · ${r.kills}킬 / ${r.deaths}데스 / ${r.assists}어시스트 · 깃발 ${r.objectives} · 에이스 승리 ${r.aceWins}</p><p class="muted">통산 ${p.record.games}세트 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 깃발 ${p.record.objectives} · 에이스 승리 ${p.record.aceWins}</p><p>명성 ${p.fame}/100 · 시즌이 바뀌어도 유지</p><small>몸값은 이번 시즌 실적과 명성·나이로 평가합니다.${r.games < 5 ? " 출전 5세트 미만은 실적을 보수적으로 반영합니다." : ""}${r.partial ? " 이전 저장의 시즌별 기록을 구분할 수 없어 업데이트 이후 실적만 반영합니다. 과거 기록은 통산에 보존됩니다." : ""}</small></section><section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
       p,
       e.confidence,
     )

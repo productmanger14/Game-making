@@ -4,6 +4,8 @@ import {
   settleSeasonPrize,
 } from "./finance.js";
 import { ensurePlayerAttributes, roleEffect, foulRisk } from "./attributes.js";
+import { ensureSeasonRecord } from "./valuation.js";
+export { marketValue as value } from "./valuation.js";
 export const VERSION = 1;
 export const roles = [
   "선봉",
@@ -255,20 +257,6 @@ export function overall(p, role = p.role) {
       5,
   );
 }
-export function value(p) {
-  const g = Math.max(1, p.record.games);
-  const performance =
-    (p.record.kills * 3 +
-      p.record.assists * 1.5 +
-      p.record.objectives * 0.5 +
-      p.record.aceWins * 8 -
-      p.record.deaths) /
-    g;
-  return Math.round(
-    Math.max(6, 12 + performance * 5 + (p.age < 25 ? 8 : 0) + p.fame * 0.4) *
-      (p.unique != null ? 1.2 : 1),
-  );
-}
 export function player(
   s,
   { country = "한국", youth = false, unique = null, team = 0, level = 0 } = {},
@@ -365,6 +353,7 @@ export function player(
     (Object.values(attributes).reduce((a, b) => a + b, 0) / 22) * 10,
   );
   p.pa = clamp(p.ca + Math.round(8 + rand(s) * 60), p.ca, 200);
+  ensureSeasonRecord(p, s.season ?? 2026, true);
   return ensurePlayerAttributes(p);
 }
 export function createWorld(seed = Date.now(), options = {}) {

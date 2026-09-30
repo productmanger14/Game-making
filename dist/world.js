@@ -8,16 +8,9 @@ import {
   clamp,
 } from "./engine.js";
 import { matchReadiness } from "./attributes.js";
+import { emptyRecord, ensureSeasonRecord, recordSet } from "./valuation.js";
 
 const rosterCache = new WeakMap();
-const recordKeys = [
-  "games",
-  "kills",
-  "deaths",
-  "assists",
-  "objectives",
-  "aceWins",
-];
 const suffixes = [
   "이클립스",
   "타이탄",
@@ -33,7 +26,6 @@ const hash = (text) => {
   for (const c of text) n = Math.imul(n ^ c.charCodeAt(0), 16777619);
   return n >>> 0;
 };
-const emptyRecord = () => Object.fromEntries(recordKeys.map((k) => [k, 0]));
 const emptyStanding = () => ({
   played: 0,
   wins: 0,
@@ -55,7 +47,10 @@ export const rankTable = (table) =>
 // Keep only seeds and changing records in saves. Full foreign profiles are
 // deterministic and cached in memory, so browsing cannot reroll a player.
 export function ensureWorld(s) {
-  if (s.world?.version === 1) return s.world;
+  if (s.world?.version === 1) {
+    ensureWorldSeasonRecords(s);
+    return s.world;
+  }
   s.world = {
     version: 1,
     seed: hash(`${s.seed}:world`),
@@ -98,7 +93,21 @@ export function ensureWorld(s) {
         score: pair[0] === 0 ? score : score.reverse(),
       });
   }
+  ensureWorldSeasonRecords(s);
   return s.world;
+}
+function ensureWorldSeasonRecords(s) {
+  if (s.world.valuationVersion === 1) return;
+  for (const league of s.world.leagues)
+    for (const club of league.table)
+      club.seasonRecords = club.records.map((record) =>
+        ensureSeasonRecord(
+          { record },
+          s.season,
+          s.season === s.world.originSeason,
+        ),
+      );
+  s.world.valuationVersion = 1;
 }
 export function getLeague(s, id = leagueId(s.country)) {
   ensureWorld(s);
@@ -134,7 +143,11 @@ export function clubRoster(s, id, clubId) {
   }
   const club = saved.table.find((t) => t.id === clubId);
   if (!cache.has(clubId)) {
-    const generator = { seed: club.seed, nextId: club.playerBase };
+    const generator = {
+      seed: club.seed,
+      nextId: club.playerBase,
+      season: s.season,
+    };
     const years = s.season - s.world.originSeason;
     const roster = Array.from({ length: 30 }, (_, i) => {
       const p = player(generator, {
@@ -143,6 +156,8 @@ export function clubRoster(s, id, clubId) {
         level: club.seed % 3,
       });
       p.record = club.records[i];
+      p.seasonRecord = club.seasonRecords[i];
+      p.fame = club.fames?.[i] ?? p.fame;
       p.age += years;
       p.contract += years;
       for (const k of ["speed", "accel", "agility"])
@@ -191,7 +206,7 @@ function quickMatch(s, id, home, away, round) {
         }))
         .sort((a, b) => b.rating - a.rating)
         .slice(0, n)
-        .map((x) => x.p),
+        .map((x) => ({ ...x.p, record: emptyRecord() })),
     );
     if (lineups.some((l) => !l.length)) {
       score[lineups[0].length ? 0 : 1] = 3;
@@ -241,7 +256,20 @@ function quickMatch(s, id, home, away, round) {
         Math.floor(losses * rand(rng)),
       );
     } else lineups[winner][0].record.aceWins++;
+    for (let team = 0; team < 2; team++)
+      for (const appearance of lineups[team])
+        recordSet(
+          rosters[team].find((p) => p.id === appearance.id),
+          s.season,
+          appearance.record,
+        );
   }
+  const foreign = s.world.leagues.find((l) => l.id === id);
+  if (foreign)
+    for (const [team, clubId] of [home, away].entries())
+      foreign.table.find((t) => t.id === clubId).fames = rosters[team].map(
+        (p) => p.fame,
+      );
   return { round, day: s.fixtureDays[round - 1], home, away, score };
 }
 function applyResult(table, result) {
@@ -303,7 +331,12 @@ export function resetWorldSeason(s) {
     league.season = s.season + 1;
     league.round = 0;
     league.results = [];
-    for (const t of league.table) Object.assign(t, emptyStanding());
+    for (const t of league.table) {
+      Object.assign(t, emptyStanding());
+      t.seasonRecords = t.records.map(() =>
+        ensureSeasonRecord({ record: emptyRecord() }, s.season + 1, true),
+      );
+    }
     rosterCache.delete(league);
   }
   s.world.localResults = [];

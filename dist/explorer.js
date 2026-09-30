@@ -1,3 +1,4 @@
+import { seasonStats } from "./valuation.js";
 import { countries } from "./countries.js";
 import { roles, weapons, overall, terrainInfo } from "./engine.js";
 import {
@@ -54,7 +55,7 @@ export function explorerHTML(s, ui, { esc, portrait, estimate, formatDate }) {
     ui.club !== null ? league.table.find((t) => t.id === ui.club) : null;
   const crumbs = `<div class="explore-toolbar"><nav class="breadcrumbs" aria-label="탐색 경로"><button class="ghost" data-browse-home="true">세계</button><span>/</span><button class="ghost" data-browse-country="${esc(ui.country)}">${esc(ui.country)} · 도시 리그</button>${club ? `<span>/</span><strong>${esc(club.name)}</strong>` : ""}</nav><label class="country-switch">국가<select id="explore-country" aria-label="탐색 국가">${countries.map((c) => `<option ${c.name === ui.country ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label></div>`;
   const rosterRow = (p, t, own) =>
-    `<tr><td>${playerLink(p, t)}</td><td>${p.role}</td><td>${weapons[p.weapon].name}</td><td><span class="rating small-rating">${rating(p, own)}</span></td><td>${p.record.games}</td><td>${p.record.kills} / ${p.record.deaths} / ${p.record.assists}</td><td>${p.record.objectives}</td></tr>`;
+    `<tr><td>${playerLink(p, t)}</td><td>${p.role}</td><td>${weapons[p.weapon].name}</td><td><span class="rating small-rating">${rating(p, own)}</span></td><td>${seasonStats(p).games}</td><td>${seasonStats(p).kills} / ${seasonStats(p).deaths} / ${seasonStats(p).assists}</td><td>${seasonStats(p).objectives}</td></tr>`;
   if (club) {
     const roster = clubRoster(s, league.id, club.id),
       rank = rankTable(league.table).findIndex((t) => t.id === club.id) + 1;
@@ -76,7 +77,7 @@ export function explorerHTML(s, ui, { esc, portrait, estimate, formatDate }) {
         ui.sort === "age"
           ? a.age - b.age
           : ui.sort === "kills"
-            ? b.record.kills - a.record.kills
+            ? seasonStats(b).kills - seasonStats(a).kills
             : overall(b) - overall(a),
       );
     const upcoming = leagueFixtures(s, league.id)
@@ -91,7 +92,7 @@ export function explorerHTML(s, ui, { esc, portrait, estimate, formatDate }) {
     return (
       head +
       crumbs +
-      `<section class="panel club-overview"><div class="club-emblem">${esc(club.name[0])}</div><div class="club-identity"><div class="eyebrow">${esc(league.name)}</div><h2>${esc(club.name)}</h2><p>${esc(city)} · ${terrainInfo[club.terrain].name} 아레나 · 1군 ${roster.length}명</p></div><div class="club-numbers"><div><strong>${league.round ? rank : "—"}</strong><span>리그 순위</span></div><div><strong>${club.wins}–${club.losses}</strong><span>승–패</span></div><div><strong>${club.for - club.against > 0 ? "+" : ""}${club.for - club.against}</strong><span>세트 득실차</span></div></div></section><div class="grid two section-gap"><section class="panel"><div class="panel-head"><h2>최근 경기</h2></div>${recent.map(fixtureLine).join("") || '<div class="empty">아직 치른 경기가 없습니다.</div>'}</section><section class="panel"><div class="panel-head"><h2>다가오는 경기</h2></div>${upcoming.map(fixtureLine).join("") || '<div class="empty">시즌 일정을 마쳤습니다.</div>'}</section></div><div class="panel-head section-gap"><h2>1군 선수단</h2><span class="muted">${list.length}명 · 기록은 누적 기준</span></div><div class="filters"><input id="explore-search" aria-label="선수 이름 검색" placeholder="선수 이름 검색" value="${esc(ui.search)}"><select id="explore-role" aria-label="포지션 필터"><option value="">모든 포지션</option>${roles.map((r) => `<option ${r === ui.role ? "selected" : ""}>${r}</option>`).join("")}</select><select id="explore-sort" aria-label="선수 정렬">${[
+      `<section class="panel club-overview"><div class="club-emblem">${esc(club.name[0])}</div><div class="club-identity"><div class="eyebrow">${esc(league.name)}</div><h2>${esc(club.name)}</h2><p>${esc(city)} · ${terrainInfo[club.terrain].name} 아레나 · 1군 ${roster.length}명</p></div><div class="club-numbers"><div><strong>${league.round ? rank : "—"}</strong><span>리그 순위</span></div><div><strong>${club.wins}–${club.losses}</strong><span>승–패</span></div><div><strong>${club.for - club.against > 0 ? "+" : ""}${club.for - club.against}</strong><span>세트 득실차</span></div></div></section><div class="grid two section-gap"><section class="panel"><div class="panel-head"><h2>최근 경기</h2></div>${recent.map(fixtureLine).join("") || '<div class="empty">아직 치른 경기가 없습니다.</div>'}</section><section class="panel"><div class="panel-head"><h2>다가오는 경기</h2></div>${upcoming.map(fixtureLine).join("") || '<div class="empty">시즌 일정을 마쳤습니다.</div>'}</section></div><div class="panel-head section-gap"><h2>1군 선수단</h2><span class="muted">${list.length}명 · ${s.season} 시즌 기록${roster.some((p) => seasonStats(p).partial) ? " · 일부 선수는 업데이트 이후 집계" : ""}</span></div><div class="filters"><input id="explore-search" aria-label="선수 이름 검색" placeholder="선수 이름 검색" value="${esc(ui.search)}"><select id="explore-role" aria-label="포지션 필터"><option value="">모든 포지션</option>${roles.map((r) => `<option ${r === ui.role ? "selected" : ""}>${r}</option>`).join("")}</select><select id="explore-sort" aria-label="선수 정렬">${[
         ["overall", "평가 능력순"],
         ["kills", "킬 기록순"],
         ["age", "나이 낮은 순"],
@@ -133,10 +134,10 @@ export function explorerHTML(s, ui, { esc, portrait, estimate, formatDate }) {
   }
   if (ui.section === "records") {
     const records = leaguePlayers(s, league.id)
-      .filter(({ player: p }) => p.record.games > 0)
+      .filter(({ player: p }) => seasonStats(p).games > 0)
       .sort(
         (a, b) =>
-          b.player.record[ui.record] - a.player.record[ui.record] ||
+          seasonStats(b.player)[ui.record] - seasonStats(a.player)[ui.record] ||
           a.player.id - b.player.id,
       )
       .slice(0, 50);
@@ -152,7 +153,7 @@ export function explorerHTML(s, ui, { esc, portrait, estimate, formatDate }) {
       )
       .join(
         "",
-      )}</select></label><p class="muted">누적 경기 기록 · 상위 50명</p></div><section class="panel table-scroll"><table><thead><tr><th>순위</th><th>선수</th><th>소속 구단</th><th>출전 세트</th><th>킬</th><th>데스</th><th>어시스트</th><th>깃발 운반</th><th>에이스 승리</th></tr></thead><tbody>${records.map(({ player: p, club: t }, i) => `<tr><td>${i + 1}</td><td>${playerLink(p, t)}</td><td>${clubLink(t, ui.country)}</td><td>${p.record.games}</td><td>${p.record.kills}</td><td>${p.record.deaths}</td><td>${p.record.assists}</td><td>${p.record.objectives}</td><td>${p.record.aceWins}</td></tr>`).join("") || '<tr><td colspan="9" class="empty">첫 경기 후 선수 기록이 집계됩니다.</td></tr>'}</tbody></table></section>`;
+      )}</select></label><p class="muted">${s.season} 시즌 기록 · 상위 50명${records.some(({ player: p }) => seasonStats(p).partial) ? " · 일부 선수는 업데이트 이후 집계" : ""}</p></div><section class="panel table-scroll"><table><thead><tr><th>순위</th><th>선수</th><th>소속 구단</th><th>출전 세트</th><th>킬</th><th>데스</th><th>어시스트</th><th>깃발 운반</th><th>에이스 승리</th></tr></thead><tbody>${records.map(({ player: p, club: t }, i) => `<tr><td>${i + 1}</td><td>${playerLink(p, t)}</td><td>${clubLink(t, ui.country)}</td><td>${seasonStats(p).games}</td><td>${seasonStats(p).kills}</td><td>${seasonStats(p).deaths}</td><td>${seasonStats(p).assists}</td><td>${seasonStats(p).objectives}</td><td>${seasonStats(p).aceWins}</td></tr>`).join("") || '<tr><td colspan="9" class="empty">첫 경기 후 선수 기록이 집계됩니다.</td></tr>'}</tbody></table></section>`;
   }
   return (
     head +
