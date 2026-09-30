@@ -1,3 +1,5 @@
+import { purchase, signSponsor, setTicketPrice } from "./finance.js";
+import { financeHTML, newFinanceView } from "./finance-view.js";
 import { explorerHTML, newExplorer } from "./explorer.js";
 import { getLeague, leagueId, clubRoster, rankTable } from "./world.js";
 import { ensurePlayerAttributes, coachObservations } from "./attributes.js";
@@ -98,7 +100,8 @@ let tab = state?.matchSeries ? "tactics" : "command",
   newsFilter = "전체",
   newsId = null,
   calendarMonth = null,
-  explorer = newExplorer();
+  explorer = newExplorer(),
+  financeView = newFinanceView();
 const date = () => formatDate(state),
   clock = (t) =>
     `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
@@ -120,6 +123,7 @@ const nav = [
   ["tactics", "전술 · 명단"],
   ["training", "훈련센터"],
   ["market", "이적 시장"],
+  ["finance", "재정센터"],
   ["facilities", "시설 · 유스"],
   ["league", "리그 현황"],
   ["explore", "세계 탐색"],
@@ -183,7 +187,7 @@ function shell() {
   document.documentElement.style.setProperty("--accent", state.clubColor);
   const locked = series && !series.finished;
   $("#app").innerHTML =
-    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.4.0</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
+    `<div class="shell"><aside class="sidebar"><div class="brand">AR<em>E</em>NA</div><div class="brand-sub">GLADIATOR MANAGER</div><div class="club-side"><div class="club-mark">${esc(state.club[0])}</div><div><strong>${esc(state.club)}</strong><small>${esc(state.country)} · ${esc(state.city)}</small></div></div><nav class="nav" aria-label="게임 메뉴">${nav.map(([id, label]) => `<button data-nav="${id}" class="${id === tab ? "active" : ""}" ${locked ? "disabled" : ""}>${icon()}${label}${id === "news" && state.news.some((n) => !n.read) ? `<span class="nav-badge">${state.news.filter((n) => !n.read).length}</span>` : ""}</button>`).join("")}</nav><div class="sidebar-foot"><div>CAREER · v0.5.0</div><div>컴퓨터 내 자동 저장</div><button data-action="export" class="ghost">저장 파일 내보내기</button><button data-action="import" class="ghost" ${locked ? "disabled" : ""}>저장 파일 불러오기</button><button data-action="reset" class="ghost" ${locked ? "disabled" : ""}>새 구단 생성</button><input id="save-file" type="file" accept="application/json" hidden></div></aside><main class="main"><header class="topbar"><div><div class="eyebrow">${state.season} SEASON / ROUND ${Math.min(state.round + 1, 14)}</div><strong>${date()} <span class="muted">· ${esc(state.manager.name)} 감독</span></strong></div><div class="top-actions"><div class="balance">${state.budget.toLocaleString()} <small>백만원</small></div><button data-action="save" class="ghost">저장</button><button data-action="day" class="primary" ${locked ? "disabled" : ""}>${continueLabel()}</button></div></header><div class="content" id="content"></div></main></div>`;
   renderContent();
 }
 function renderContent() {
@@ -202,6 +206,7 @@ function renderContent() {
       tactics: renderTactics,
       training: renderTraining,
       market: renderMarket,
+      finance: renderFinance,
       facilities: renderFacilities,
       league: renderLeague,
       explore: renderExplorer,
@@ -313,7 +318,7 @@ function renderNews(c) {
       "구단 보고, 이적 소식과 이벤트를 확인하고 결정을 내리세요.",
       `<button data-action="read-all">모두 읽음</button>`,
     ) +
-    `<div class="filters">${[...categoryLabels, "미확인"].map((cat) => `<button data-news-filter="${cat}" class="${cat === newsFilter ? "primary" : ""}">${cat}</button>`).join("")}</div><div class="inbox-layout"><section class="panel inbox-list">${list.map((item) => `<button class="news-item ${item.id === n?.id ? "active" : ""} ${item.read ? "" : "unread"}" data-open-news="${item.id}"><span class="flex spread"><small>${item.category} · ${esc(item.sender)}</small>${item.mustRespond && !item.resolution ? '<b class="error-text">응답 필요</b>' : ""}</span><strong>${esc(item.title)}</strong><small>${formatDate({ season: item.season }, item.day)}</small></button>`).join("") || '<p class="empty">표시할 소식이 없습니다.</p>'}</section><article class="panel news-detail">${n ? `<span class="pill">${n.category}</span><h2>${esc(n.title)}</h2><p class="muted">${esc(n.sender)} · ${formatDate({ season: n.season }, n.day)}</p><p class="event-scene">${esc(n.text)}</p>${n.resolution ? `<div class="info">처리 완료 · ${n.resolution}</div>` : n.action ? `<div class="dialog-actions"><button class="primary" data-news-choice="accept" data-news-id="${n.id}">${n.action.kind === "relationship" ? "대화로 안심시키기" : n.action.kind === "trial" ? "테스트 진행 · 12백만" : "제안 수락"}</button><button data-news-choice="decline" data-news-id="${n.id}">${n.action.kind === "relationship" ? "개인적 경계를 설명하기" : "거절"}</button></div>` : ""}${n.playerId && findPlayer(n.playerId) ? `<button class="section-gap" data-player="${n.playerId}">선수 보고서 보기</button>` : ""}${!n.read ? `<button class="section-gap ghost" data-open-news="${n.id}">읽음으로 표시</button>` : ""}` : '<div class="empty">새 소식이 도착하면 이곳에서 확인할 수 있습니다.</div>'}</article></div>`;
+    `<div class="filters">${[...categoryLabels, "미확인"].map((cat) => `<button data-news-filter="${cat}" class="${cat === newsFilter ? "primary" : ""}">${cat}</button>`).join("")}</div><div class="inbox-layout"><section class="panel inbox-list">${list.map((item) => `<button class="news-item ${item.id === n?.id ? "active" : ""} ${item.read ? "" : "unread"}" data-open-news="${item.id}"><span class="flex spread"><small>${item.category} · ${esc(item.sender)}</small>${item.mustRespond && !item.resolution ? '<b class="error-text">응답 필요</b>' : ""}</span><strong>${esc(item.title)}</strong><small>${formatDate({ season: item.season }, item.day)}</small></button>`).join("") || '<p class="empty">표시할 소식이 없습니다.</p>'}</section><article class="panel news-detail">${n ? `<span class="pill">${n.category}</span><h2>${esc(n.title)}</h2><p class="muted">${esc(n.sender)} · ${formatDate({ season: n.season }, n.day)}</p><p class="event-scene">${esc(n.text)}</p>${n.resolution ? `<div class="info">처리 완료 · ${n.resolution}</div>` : n.action ? `<div class="dialog-actions"><button class="primary" data-news-choice="accept" data-news-id="${n.id}">${n.action.kind === "relationship" ? "대화로 안심시키기" : n.action.kind === "trial" ? "테스트 진행 · 12백만" : "제안 수락"}</button><button data-news-choice="decline" data-news-id="${n.id}">${n.action.kind === "relationship" ? "개인적 경계를 설명하기" : "거절"}</button></div>` : ""}${n.category === "재정" ? `<button class="section-gap" data-nav="finance">재정센터 열기</button>` : ""}${n.playerId && findPlayer(n.playerId) ? `<button class="section-gap" data-player="${n.playerId}">선수 보고서 보기</button>` : ""}${!n.read ? `<button class="section-gap ghost" data-open-news="${n.id}">읽음으로 표시</button>` : ""}` : '<div class="empty">새 소식이 도착하면 이곳에서 확인할 수 있습니다.</div>'}</article></div>`;
 }
 function renderSchedule(c) {
   const current = calendarDate(state);
@@ -566,13 +571,17 @@ function loop(ts) {
     updateMatchUI();
   }
 }
-function spend(n) {
-  if (state.budget < n) {
-    toast("구단 예산이 부족합니다.");
+function spend(n, category, label) {
+  try {
+    purchase(state, n, category, label);
+    return true;
+  } catch (error) {
+    toast(error.message);
     return false;
   }
-  state.budget -= n;
-  return true;
+}
+function renderFinance(c) {
+  c.innerHTML = financeHTML(state, financeView, { esc });
 }
 
 function playerRow(p, opts = {}) {
@@ -666,7 +675,7 @@ function renderLeague(c) {
     title(
       "COMPETITION",
       "리그 현황",
-      "국내 승강 리그에서 출발해 대륙과 월드 무대를 향합니다.",
+      "현재 시즌의 순위와 경기 결과를 확인하세요.",
       `<div class="flex"><span class="pill lime">${state.division || "도시 리그"} · ${state.season}</span><button data-nav="explore">세계 탐색</button></div>`,
     ) +
     `<div class="grid four">${[
@@ -681,7 +690,7 @@ function renderLeague(c) {
       )
       .join(
         "",
-      )}</div><section class="panel section-gap"><div class="panel-head"><h2>시즌 순위</h2><span class="muted">상위 2팀 승격 · 하위 2팀 강등</span></div><div class="table-scroll"><table><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득</th><th>세트 실</th><th>득실차</th></tr></thead><tbody>${rank.map((t, i) => `<tr class="${t.id === 0 ? "ours" : ""}"><td><span class="rating" style="color:${i < 2 ? "var(--accent)" : i > 5 ? "var(--red)" : "var(--text)"}">${i + 1}</span></td><td><button class="ghost browse-link" data-browse-club="${t.id}" data-browse-country="${esc(state.country)}">${esc(t.name)}</button> ${t.id === 0 ? '<span class="pill lime">내 구단</span>' : ""}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.for}</td><td>${t.against}</td><td>${t.for - t.against}</td></tr>`).join("")}</tbody></table></div></section><div class="grid two section-gap"><section class="panel"><div class="panel-head"><h2>경기 결과</h2></div>${
+      )}</div><section class="panel section-gap"><div class="panel-head"><h2>시즌 순위</h2><span class="muted">순위별 시즌 상금 지급</span></div><div class="table-scroll"><table><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득</th><th>세트 실</th><th>득실차</th></tr></thead><tbody>${rank.map((t, i) => `<tr class="${t.id === 0 ? "ours" : ""}"><td><span class="rating" style="color:${i < 2 ? "var(--accent)" : i > 5 ? "var(--red)" : "var(--text)"}">${i + 1}</span></td><td><button class="ghost browse-link" data-browse-club="${t.id}" data-browse-country="${esc(state.country)}">${esc(t.name)}</button> ${t.id === 0 ? '<span class="pill lime">내 구단</span>' : ""}</td><td>${t.played}</td><td>${t.wins}</td><td>${t.losses}</td><td>${t.for}</td><td>${t.against}</td><td>${t.for - t.against}</td></tr>`).join("")}</tbody></table></div></section><div class="grid two section-gap"><section class="panel"><div class="panel-head"><h2>경기 결과</h2></div>${
       state.history.length
         ? state.history
             .slice(0, 8)
@@ -700,7 +709,7 @@ function renderLeague(c) {
           return `<div class="news-row flex spread"><span><span class="muted">R${state.round + i + 1}</span> ${esc(op.name)}</span><span class="pill">${pair[0] === 0 ? "홈" : "원정"} · ${terrainInfo[pair[0] === 0 ? state.homeTerrain : op.terrain].name}</span></div>`;
         })
         .join("") || '<div class="empty">모든 경기가 종료되었습니다.</div>'
-    }</section></div><div class="info section-gap">현재 버전은 국내 8팀 리그를 플레이합니다. 시즌 종료 시 승강 상태를 기록하지만, 상위 리그의 별도 구단 구성과 국제대회 일정은 아직 구현 전입니다.</div>`;
+    }</section></div><div class="info section-gap">현재는 같은 8팀으로 다음 시즌을 진행합니다. 승격·강등과 상위 리그·국제대회 진출은 아직 구현되지 않았습니다.</div>`;
 }
 function renderRelations(c) {
   const adults = state.players.filter((p) => p.age >= 18 && !p.youth);
@@ -789,6 +798,7 @@ document.addEventListener("submit", (e) => {
     newsId = null;
     newsFilter = "전체";
     explorer = newExplorer();
+    financeView = newFinanceView();
     save();
     shell();
     toast("구단이 창단되었습니다. 일정과 새 소식을 확인하세요.");
@@ -820,6 +830,30 @@ document.addEventListener("click", (e) => {
       !("prepProfile" in d)
     )
       return;
+    if (d.financeTab) {
+      financeView.tab = d.financeTab;
+      renderContent();
+      return;
+    }
+    if (d.financePage) {
+      financeView.page = Math.max(0, Number(d.financePage));
+      renderContent();
+      return;
+    }
+    if (d.signSponsor) {
+      signSponsor(state, d.signSponsor);
+      save();
+      shell();
+      toast("시즌 후원 계약을 체결했습니다.");
+      return;
+    }
+    if (action === "ticket-price") {
+      setTicketPrice(state, Number($("#ticket-price").value));
+      save();
+      renderContent();
+      toast("다음 홈 경기의 입장권 가격을 변경했습니다.");
+      return;
+    }
     if (d.browsePlayer) {
       const league = getLeague(state, leagueId(explorer.country));
       const club = league?.table.find((t) => t.id === Number(d.browseClubId));
@@ -936,7 +970,14 @@ document.addEventListener("click", (e) => {
       const id = d.upgrade;
       if (!["training", "medical", "scouting", "youth"].includes(id)) return;
       const lv = state.facilities[id];
-      if (lv < 5 && spend(lv * 65)) {
+      if (
+        lv < 5 &&
+        spend(
+          lv * 65,
+          "facilities",
+          `${facilities.find((f) => f[0] === id)[1]} LV.${lv + 1} 확장`,
+        )
+      ) {
         state.facilities[id]++;
         addNews(state, {
           title: "시설 확장 완료",
@@ -952,7 +993,14 @@ document.addEventListener("click", (e) => {
       const id = d.staff;
       if (!["coach", "analyst", "scout"].includes(id)) return;
       const lv = state.staff[id];
-      if (lv < 5 && spend(lv * 40)) {
+      if (
+        lv < 5 &&
+        spend(
+          lv * 40,
+          "staff",
+          `${{ coach: "코칭", analyst: "분석", scout: "스카우트" }[id]} 팀 LV.${lv + 1} 보강`,
+        )
+      ) {
         state.staff[id]++;
         addNews(state, {
           title: "스태프 보강",
@@ -965,7 +1013,7 @@ document.addEventListener("click", (e) => {
     }
     if (d.scout) {
       const p = findPlayer(d.scout);
-      if (p && spend(8)) {
+      if (p && spend(8, "scouting", `${p.name} 추가 관찰`)) {
         p.scout = Math.min(100, p.scout + 20 + state.staff.scout * 4);
         addNews(state, {
           category: "이적",
@@ -983,7 +1031,7 @@ document.addEventListener("click", (e) => {
       const p = findPlayer(d.sign);
       if (p && state.market.includes(p) && state.players.length < 30) {
         const fee = Math.ceil(value(p) * 0.35);
-        if (spend(fee)) {
+        if (spend(fee, "signing", `${p.name} 자유계약 계약금`)) {
           state.market = state.market.filter((x) => x.id !== p.id);
           p.team = 0;
           p.contract = state.season + 2;
@@ -1030,7 +1078,7 @@ document.addEventListener("click", (e) => {
       if (!p) return;
       if (state.players.filter((x) => x.id !== p.id && !x.injury).length < 20)
         return toast("출전 가능한 선수를 20명 이상 유지해야 합니다.");
-      if (spend(p.wage * 3)) {
+      if (spend(p.wage * 3, "release", `${p.name} 계약 해지 위약금`)) {
         state.players = state.players.filter((x) => x.id !== p.id);
         selected.delete(p.id);
         p.team = -1;
@@ -1171,7 +1219,7 @@ document.addEventListener("click", (e) => {
       save();
       shell();
     }
-    if (action === "scout-event" && spend(12)) {
+    if (action === "scout-event" && spend(12, "scouting", "지역 인재 탐색")) {
       const p = player(state, {
         country: state.country,
         team: -1,
@@ -1193,7 +1241,7 @@ document.addEventListener("click", (e) => {
     if (action === "youth-recruit") {
       if (state.youth.length >= 20)
         return toast("유스 수용 인원은 최대 20명입니다.");
-      if (spend(25)) {
+      if (spend(25, "youth", "유망주 모집")) {
         const count = Math.min(
           state.facilities.youth + 1,
           20 - state.youth.length,
@@ -1224,6 +1272,7 @@ document.addEventListener("click", (e) => {
       series = null;
       battle = null;
       calendarMonth = null;
+      financeView = newFinanceView();
       save();
       shell();
     }
@@ -1270,6 +1319,14 @@ document.addEventListener("change", async (e) => {
           (c) => c.name === setupDraft.country,
         ).cities[0];
       renderSetup();
+      return;
+    }
+    if (
+      ["finance-month", "finance-category", "finance-direction"].includes(el.id)
+    ) {
+      financeView[el.id.slice(8)] = el.value;
+      financeView.page = 0;
+      renderContent();
       return;
     }
     if (el.id.startsWith("explore-")) {
@@ -1345,6 +1402,7 @@ document.addEventListener("change", async (e) => {
       tab = series ? "tactics" : "command";
       newsId = null;
       explorer = newExplorer();
+      financeView = newFinanceView();
       calendarMonth = null;
       save();
       shell();

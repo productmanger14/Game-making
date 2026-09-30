@@ -1,4 +1,10 @@
 import {
+  ensureFinance,
+  postTransaction,
+  purchase,
+  rollFinanceSeason,
+} from "./finance.js";
+import {
   ensurePlayerAttributes,
   matchReadiness,
   trainingMotivation,
@@ -64,6 +70,7 @@ export const categoryLabels = [
   "경기",
   "훈련",
   "이적",
+  "재정",
   "구단",
   "이벤트",
 ];
@@ -219,6 +226,7 @@ export function migrateCareer(s) {
   if (s.matchSeries?.phase === "playing") s.matchSeries.phase = "preparation";
   ensureWorld(s);
   advanceWorld(s);
+  ensureFinance(s);
   return s;
 }
 export function createCareer(config, seed = Date.now()) {
@@ -430,10 +438,9 @@ export function resolveNews(s, id, choice) {
   const a = n.action;
   if (choice === "accept") {
     if (a.kind === "sponsor") {
-      s.budget += a.amount;
-      s.financeHistory.unshift({
-        day: s.day,
-        season: s.season,
+      postTransaction(s, {
+        key: `news:${n.id}`,
+        category: "sponsor",
         label: "지역 후원 행사",
         amount: a.amount,
       });
@@ -454,7 +461,12 @@ export function resolveNews(s, id, choice) {
         s.market.push(released);
       }
       squad.push(p);
-      s.budget += a.amount;
+      postTransaction(s, {
+        key: `news:${n.id}`,
+        category: "sale",
+        label: `${p.name} → ${s.table[a.clubId].name} 이적료`,
+        amount: a.amount,
+      });
       s.transferHistory.unshift({
         season: s.season,
         day: s.day,
@@ -477,7 +489,7 @@ export function resolveNews(s, id, choice) {
       }
     } else if (a.kind === "trial") {
       if (s.budget < 12) throw Error("테스트 비용 12백만원이 부족합니다.");
-      s.budget -= 12;
+      purchase(s, 12, "scouting", "지역 공개 테스트");
       const p = player(s, { country: s.country, team: -1, level: 1 });
       p.scout = 70;
       s.market.unshift(p);
@@ -519,9 +531,9 @@ function dailyEvents(s) {
     });
   if (s.day === 2)
     addNews(s, {
-      category: "이벤트",
+      category: "재정",
       title: "지역 후원 행사 제안",
-      text: "지역 후원사가 창단 행사를 지원하고 싶어 합니다. 수락하면 후원금 25백만원을 받습니다.",
+      text: "지역 후원사가 구단 행사를 지원하고 싶어 합니다. 수락하면 후원금 25백만원을 받습니다.",
       sender: "상업 담당",
       mustRespond: true,
       action: { kind: "sponsor", amount: 25 },
@@ -600,24 +612,9 @@ export function advanceCareer(s, untilMatch = false) {
       p.injury = Math.max(0, p.injury - 1);
       p.fatigue = Math.max(0, p.fatigue - 12);
     }
-    const budget = s.budget;
     advance(s, 1);
     train(s, trainingDay(s));
     advanceWorld(s);
-    if (s.budget < budget) {
-      const amount = s.budget - budget;
-      s.financeHistory.unshift({
-        day: s.day,
-        season: s.season,
-        label: "급료·시설 유지비",
-        amount,
-      });
-      addNews(s, {
-        title: "주간 지출 보고",
-        text: `선수 급료와 시설 유지비 ${-amount}백만원이 지급되었습니다. 잔액 ${s.budget}백만원.`,
-        sender: "재무 담당",
-      });
-    }
     dailyEvents(s);
     normalizeNews(s);
     days++;
@@ -799,6 +796,7 @@ export function nextSeason(s) {
   s.matchSeries = null;
   s.lastMatch = null;
   s.talkDay = {};
+  rollFinanceSeason(s, rank);
   for (const t of s.table)
     Object.assign(t, { played: 0, wins: 0, losses: 0, for: 0, against: 0 });
   for (const p of [
@@ -826,7 +824,7 @@ export function forfeitMatch(s) {
     throw Error("기권할 수 있는 경기일이 아닙니다.");
   if (s.players.filter((p) => !p.injury).length >= 20)
     throw Error("정상 출전 가능한 선수단입니다.");
-  finishDomesticRound(s, [0, 3]);
+  finishDomesticRound(s, [0, 3], { forfeit: true });
   normalizeNews(s);
   s.lastMatch = {
     opponent: f.opponent.name,

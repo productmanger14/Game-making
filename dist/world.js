@@ -272,7 +272,7 @@ export function advanceWorld(s) {
     }
   }
 }
-export function finishDomesticRound(s, score) {
+export function finishDomesticRound(s, score, options = {}) {
   ensureWorld(s);
   const round = s.round + 1,
     id = leagueId(s.country);
@@ -289,7 +289,7 @@ export function finishDomesticRound(s, score) {
     away: pair[1],
     score: pair[0] === 0 ? [...score] : [score[1], score[0]],
   };
-  finishFixture(s, score, other);
+  finishFixture(s, score, other, options);
   s.world.localResults.push(...other, own);
   advanceWorld(s);
 }

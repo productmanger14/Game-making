@@ -1,0 +1,242 @@
+.finance-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.finance-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.finance-toolbar label {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 150px;
+}
+.finance-toolbar > button {
+  margin-left: auto;
+}
+.finance-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.finance-card {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.finance-card > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.finance-card > strong {
+  font-family: var(--display);
+  font-size: 32px;
+  line-height: 1.1;
+}
+.finance-card > small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.negative {
+  color: #ef9b92 !important;
+}
+.finance-lines {
+  margin-top: 16px;
+}
+.finance-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.finance-lines > div > span {
+  color: var(--muted);
+}
+.finance-lines > div > strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.finance-lines .finance-total {
+  border-bottom: 0;
+  margin-top: 8px;
+  font-size: 17px;
+}
+.finance-lines .finance-total > span {
+  color: var(--text);
+}
+.finance-warning {
+  padding: 18px 22px;
+  border: 1px solid #76533e;
+  background: #302a23;
+  border-radius: 8px;
+  color: #edc295;
+}
+.finance-warning p {
+  margin: 7px 0 0;
+  font-size: 13px;
+}
+.next-payment {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 22px 0;
+}
+.next-payment > strong {
+  font-size: 40px;
+  font-family: var(--display);
+  color: var(--accent);
+}
+.next-payment small {
+  margin-left: 8px;
+  font:
+    12px "Noto Sans KR",
+    sans-serif;
+  color: var(--muted);
+}
+.next-payment > span {
+  font-size: 13px;
+  color: var(--teal);
+}
+.finance-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 24px 0;
+}
+.finance-legend {
+  display: flex;
+  gap: 18px;
+  font-size: 11px;
+}
+.finance-legend > span:before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  margin-right: 6px;
+  border-radius: 2px;
+}
+.finance-legend > span + span:before {
+  background: #d98e84;
+}
+.cashflow-row {
+  display: grid;
+  grid-template-columns: 100px minmax(20px, 1fr) 75px;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  margin: 16px 0;
+}
+.cashflow-row > span {
+  color: var(--muted);
+}
+.cashflow-row > strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cashflow-track {
+  height: 9px;
+  border-radius: 3px;
+  background: #26383d;
+  overflow: hidden;
+}
+.cashflow-track i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.cashflow-track i.expense {
+  background: #d98e84;
+}
+.finance-inline-head {
+  padding: 0 0 18px;
+  border: 0;
+  gap: 16px;
+}
+.finance-inline-head h2 {
+  margin: 5px 0;
+}
+.sponsor-offer {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 18px;
+  background: #17272d;
+}
+.sponsor-offer h3,
+.sponsor-active h3 {
+  font-size: 21px;
+  margin: 15px 0;
+}
+.sponsor-active {
+  margin-top: 24px;
+}
+.ledger-label {
+  white-space: normal;
+  min-width: 230px;
+  line-height: 1.6;
+}
+.finance-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 12px;
+}
+.finance-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+.sidebar .nav {
+  flex-shrink: 0;
+}
+@media (max-width: 1200px) {
+  .finance-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .finance-card > strong {
+    font-size: 29px;
+  }
+  .cashflow-row {
+    grid-template-columns: 85px minmax(15px, 1fr) 62px;
+    gap: 6px;
+  }
+}
+@media (max-width: 700px) {
+  .finance-toolbar label {
+    min-width: 120px;
+    flex: 1;
+  }
+  .finance-toolbar > button {
+    margin-left: 0;
+  }
+  .finance-card {
+    padding: 16px;
+  }
+  .finance-card > strong {
+    font-size: 26px;
+  }
+  .finance-inline-head {
+    flex-wrap: wrap;
+  }
+  .finance-pagination {
+    flex-wrap: wrap;
+  }
+  .finance-tabs {
+    gap: 6px;
+  }
+  .cashflow-row {
+    grid-template-columns: 75px 1fr 58px;
+    font-size: 11px;
+  }
+}

@@ -1,3 +1,8 @@
+import {
+  settleFinanceDay,
+  settleMatchFinance,
+  settleSeasonPrize,
+} from "./finance.js";
 import { ensurePlayerAttributes, roleEffect, foulRisk } from "./attributes.js";
 export const VERSION = 1;
 export const roles = [
@@ -460,7 +465,7 @@ export function createWorld(seed = Date.now(), options = {}) {
     {
       day: 0,
       title: "새 시즌 개막",
-      text: "도시 리그 8개 구단 · 홈·원정 14경기. 상위 2팀 승격, 하위 2팀 강등 기준으로 운영되는 첫 시즌입니다.",
+      text: "도시 리그 8개 구단 · 홈·원정 14경기. 시즌 순위에 따른 상금이 지급되며, 현재 승격·강등은 운영하지 않습니다.",
     },
     {
       day: 0,
@@ -506,7 +511,8 @@ export function advance(s, days = 1) {
         }
       }
     }
-    if (s.day % 7 === 0)
+    if (s.finance) settleFinanceDay(s);
+    else if (s.day % 7 === 0)
       s.budget -=
         s.players.reduce((n, p) => n + p.wage, 0) +
         Object.values(s.facilities).reduce((a, b) => a + b, 0) * 3;
@@ -533,7 +539,7 @@ export function enemyRoster(s) {
     player(s, { team: 1, level: clamp(Math.floor(s.round / 4), 0, 2) }),
   );
 }
-export function finishFixture(s, result, otherResults = null) {
+export function finishFixture(s, result, otherResults = null, options = {}) {
   const fixture = nextFixture(s);
   if (!fixture) throw Error("시즌이 종료되었습니다.");
   function apply(a, b, sa, sb) {
@@ -560,7 +566,12 @@ export function finishFixture(s, result, otherResults = null) {
       }
     }
   }
-  s.budget += result[0] > result[1] ? 110 : 55;
+  const cashChange = s.finance
+    ? settleMatchFinance(s, fixture, result, options)
+    : result[0] > result[1]
+      ? 110
+      : 55;
+  if (!s.finance) s.budget += cashChange;
   s.history.unshift({
     season: s.season,
     day: s.day,
@@ -572,9 +583,10 @@ export function finishFixture(s, result, otherResults = null) {
   s.news.unshift({
     day: s.day,
     title: result[0] > result[1] ? "승리 보고" : "경기 종료",
-    text: `${fixture.opponent.name}전 ${result.join(":")} · 수입 ${result[0] > result[1] ? 110 : 55}백만원`,
+    text: `${fixture.opponent.name}전 ${result.join(":")} · 경기일 정산 ${cashChange}백만원`,
   });
   s.round++;
+  if (s.finance) settleSeasonPrize(s);
   if (!s.careerVersion) advance(s, 2);
 }
 const weights = ["tech", "accuracy", "defense", "judgment"];
