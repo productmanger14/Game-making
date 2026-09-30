@@ -1,3 +1,4 @@
+import { ensureIdentity } from "./identity.js";
 import { motifs } from "./motifs.js";
 import {
   signatureSkills,
@@ -308,6 +309,7 @@ export function player(
   );
   p.pa = clamp(p.ca + Math.round(8 + rand(s) * 60), p.ca, 200);
   ensureSeasonRecord(p, s.season ?? 2026, true);
+  ensureIdentity(p);
   return ensurePlayerAttributes(p);
 }
 export function createWorld(seed = Date.now(), options = {}) {

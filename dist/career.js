@@ -1,3 +1,4 @@
+import { ensureIdentity, recordMoment } from "./identity.js";
 import { trainSkill, gainMatchSkills, skillDefinitions } from "./skills.js";
 import {
   ensureFinance,
@@ -191,6 +192,7 @@ export function migrateCareer(s) {
   s.growthLog ??= [];
   s.skillHistory ??= [];
   s.transferHistory ??= [];
+  s.playerJournals ??= {};
   s.financeHistory ??= [];
   s.setPlans ??= modes.map(() => ({
     tactic: s.tactic || "균형",
@@ -217,6 +219,7 @@ export function migrateCareer(s) {
     ...s.market,
     ...Object.values(s.opponentSquads).flat(),
   ]) {
+    ensureIdentity(p);
     ensurePlayerAttributes(p);
     ensureSeasonRecord(p, s.season, s.season === 2026);
     p.trainingFocus ??= "균형";
@@ -512,6 +515,7 @@ export function resolveNews(s, id, choice) {
         label: `${p.name} → ${s.table[a.clubId].name} 이적료`,
         amount: a.amount,
       });
+      recordMoment(s, p, "이적", `${s.club}에서 ${s.table[a.clubId].name}으로 이적했다.`);
       s.transferHistory.unshift({
         season: s.season,
         day: s.day,
@@ -628,6 +632,7 @@ function dailyEvents(s) {
     }
     p.team = clubId;
     squad.push(p);
+    recordMoment(s, p, "이적", `자유계약으로 ${s.table[clubId].name}에 합류했다.`);
     s.transferHistory.unshift({
       season: s.season,
       day: s.day,

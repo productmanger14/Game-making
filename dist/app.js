@@ -1,3 +1,4 @@
+import { portraitSVG, journal, writeJournal, recordMoment, background } from "./identity.js";
 import {
   setSkillTraining,
   forgetSkill,
@@ -111,7 +112,8 @@ let tab = state?.matchSeries ? "tactics" : "command",
   newsId = null,
   calendarMonth = null,
   explorer = newExplorer(),
-  financeView = newFinanceView();
+  financeView = newFinanceView(),
+  profilePlayer = null;
 const date = () => formatDate(state),
   clock = (t) =>
     `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
@@ -121,9 +123,7 @@ const portrait = (p, cls = "portrait") => {
       atlas = ["a", "b", "c", "d"][Math.floor(p.unique / 25)];
     return `<div class="${cls} atlas-portrait" role="img" aria-label="${esc(p.name)} 초상화" style="--portrait-atlas:url('assets/portraits-${atlas}.png');--portrait-x:${(index % 5) * 25}%;--portrait-y:${Math.floor(index / 5) * 25}%"></div>`;
   }
-  return p.portrait == null
-    ? `<div class="${cls} portrait-fallback">${esc(p.name[0])}</div>`
-    : `<img class="${cls}" src="assets/portrait-${p.portrait}.webp" alt="${esc(p.name)} 초상화" loading="lazy">`;
+  return `<div class="${cls} generated-portrait">${portraitSVG(p)}</div>`;
 };
 const nav = [
   ["command", "감독실"],
@@ -168,8 +168,10 @@ function save(silent = true) {
     );
     if (!silent)
       toast("자동 저장 완료. 진행 중인 세트는 시작 전 상태로 저장됩니다.");
+    return true;
   } catch {
     toast("저장 공간이 부족합니다. 저장 파일을 내보내세요.");
+    return false;
   }
 }
 function ranked() {
@@ -752,6 +754,7 @@ function findPlayer(id) {
   );
 }
 function detail(p, context = {}) {
+  profilePlayer = p;
   ensurePlayerAttributes(p);
   const r = seasonStats(p);
   const market = state.market.includes(p),
@@ -777,7 +780,7 @@ function detail(p, context = {}) {
       )
       .join(
         "",
-      )}</div><section class="info section-gap season-report"><strong>${state.season} 시즌 기록${r.partial ? " · 업데이트 이후" : ""}</strong><p>${r.games}세트 · ${r.kills}킬 / ${r.deaths}데스 / ${r.assists}어시스트 · 깃발 ${r.objectives} · 에이스 승리 ${r.aceWins}</p><p class="muted">통산 ${p.record.games}세트 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 깃발 ${p.record.objectives} · 에이스 승리 ${p.record.aceWins}</p><p>명성 ${p.fame}/100 · 시즌이 바뀌어도 유지</p><small>몸값은 이번 시즌 실적과 명성·나이로 평가합니다.${r.games < 5 ? " 출전 5세트 미만은 실적을 보수적으로 반영합니다." : ""}${r.partial ? " 이전 저장의 시즌별 기록을 구분할 수 없어 업데이트 이후 실적만 반영합니다. 과거 기록은 통산에 보존됩니다." : ""}</small></section>${skillsHTML(p, { esc, editable: !state.matchSeries && !external && (state.players.includes(p) || state.youth.includes(p)) })}<section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
+      )}</div><section class="info section-gap season-report"><strong>${state.season} 시즌 기록${r.partial ? " · 업데이트 이후" : ""}</strong><p>${r.games}세트 · ${r.kills}킬 / ${r.deaths}데스 / ${r.assists}어시스트 · 깃발 ${r.objectives} · 에이스 승리 ${r.aceWins}</p><p class="muted">통산 ${p.record.games}세트 · ${p.record.kills}킬 / ${p.record.deaths}데스 / ${p.record.assists}어시스트 · 깃발 ${p.record.objectives} · 에이스 승리 ${p.record.aceWins}</p><p>명성 ${p.fame}/100 · 시즌이 바뀌어도 유지</p><small>몸값은 이번 시즌 실적과 명성·나이로 평가합니다.${r.games < 5 ? " 출전 5세트 미만은 실적을 보수적으로 반영합니다." : ""}${r.partial ? " 이전 저장의 시즌별 기록을 구분할 수 없어 업데이트 이후 실적만 반영합니다. 과거 기록은 통산에 보존됩니다." : ""}</small></section>${personalHTML(p)}${skillsHTML(p, { esc, editable: !state.matchSeries && !external && (state.players.includes(p) || state.youth.includes(p)) })}<section class="info section-gap"><strong>코치 · 스카우트 관찰</strong><ul>${coachObservations(
       p,
       e.confidence,
     )
@@ -787,6 +790,19 @@ function detail(p, context = {}) {
       )}</ul><small>관찰을 통해 파악한 성향입니다. 개인 능력치는 1~20으로 표시합니다.</small></section><div class="dialog-actions">${external ? `<p class="muted">타 구단 선수 보고서 · 관찰 신뢰도 ${e.confidence}%<br>소속 선수와의 계약 협상은 아직 지원하지 않습니다.</p>` : market ? `<button data-scout="${p.id}">추가 관찰 · 8백만</button><button class="primary" data-sign="${p.id}" ${state.players.length >= 30 ? "disabled" : ""}>계약 · ${Math.ceil(value(p) * 0.35)}백만</button>` : youth ? `<button class="primary" data-promote="${p.id}" ${state.players.length >= 30 ? "disabled" : ""}>1군 승격</button>` : `<button data-talk="${p.id}" ${state.talkDay[p.id] === state.day ? "disabled" : ""}>개인 대화</button><button class="danger" data-release="${p.id}">계약 해지</button>`}</div>${state.players.length >= 30 && (market || youth) ? '<p class="muted">로스터가 가득 찼습니다. 기존 선수의 자리를 먼저 확보하세요.</p>' : ""}</div></div>`,
   );
 }
+function personalHTML(p) {
+  const j = journal(state, p);
+  return `<section class="personal-record section-gap"><h3>인물 이야기</h3><p class="muted"><small>기본 배경 · 생성된 인물 설정</small>${esc(background(p))}</p><label for="player-story">내가 정하는 인물 설정</label><textarea id="player-story" data-journal-field="story" maxlength="4000" rows="4" placeholder="과거, 목표, 라이벌, 이 선수만의 이야기를 적으세요.">${esc(j.story)}</textarea><label for="player-memo">감독 메모</label><textarea id="player-memo" data-journal-field="memo" maxlength="4000" rows="3" placeholder="기용 계획, 성장 목표, 기억하고 싶은 순간을 적으세요.">${esc(j.memo)}</textarea><small id="journal-status" role="status">입력하면 자동 저장됩니다. 각 항목 최대 4,000자.</small><h3>함께한 순간</h3><ol class="personal-timeline">${j.events.map(event => `<li><time>${formatDate({ season: event.season }, event.day)}</time><strong>${esc(event.kind)}</strong><p>${esc(event.text)}</p></li>`).join("") || '<li class="muted">앞으로의 영입·승격·대화·이적 기록이 여기에 쌓입니다.</li>'}</ol></section>`;
+}
+document.addEventListener("input", (event) => {
+  const field = event.target.dataset?.journalField;
+  if (!field || !profilePlayer || !state) return;
+  try {
+    writeJournal(state, profilePlayer, field, event.target.value);
+    const ok = save();
+    $("#journal-status").textContent = ok ? "저장 완료 · 선수의 소속이 바뀌어도 기록은 유지됩니다." : "저장 실패 · 내용을 복사해 보관하고 저장 파일을 내보내세요.";
+  } catch (error) { toast(error.message); }
+});
 function talk(p) {
   if (state.talkDay[p.id] === state.day)
     return toast("오늘은 이미 대화했습니다.");
@@ -828,7 +844,8 @@ document.addEventListener("submit", (e) => {
     newsId = null;
     newsFilter = "전체";
     explorer = newExplorer();
-    financeView = newFinanceView();
+    financeView = newFinanceView(),
+  profilePlayer = null;
     save();
     shell();
     toast("구단이 창단되었습니다. 일정과 새 소식을 확인하세요.");
@@ -1093,6 +1110,7 @@ document.addEventListener("click", (e) => {
               ? 0
               : Math.max(1, 9 - Math.floor(p.hidden.adaptability / 3));
           state.players.push(p);
+          recordMoment(state, p, "영입", `자유계약으로 ${state.club}에 합류했다.`);
           state.transferHistory.unshift({
             season: state.season,
             day: state.day,
@@ -1134,6 +1152,7 @@ document.addEventListener("click", (e) => {
         p.team = -1;
         p.trust = Math.max(0, p.trust - 15);
         state.market.push(p);
+        recordMoment(state, p, "계약 해지", `${state.club}과 계약을 끝내고 자유계약 선수가 되었다.`);
         addNews(state, {
           category: "이적",
           title: "계약 해지 완료",
@@ -1150,6 +1169,7 @@ document.addEventListener("click", (e) => {
       const p = state.youth.find((p) => p.id === Number(d.promote));
       if (p && state.players.length < 30) {
         state.youth = state.youth.filter((x) => x.id !== p.id);
+        recordMoment(state, p, "승격", "유스에서 1군으로 승격했다.");
         p.youth = false;
         p.team = 0;
         state.players.push(p);
@@ -1218,6 +1238,7 @@ document.addEventListener("click", (e) => {
           break;
         }
       }
+      recordMoment(state, p, "대화", `${ch === "work" ? "훈련 목표" : "개인적인 이야기"}에 대해 대화했다. 현재 관계: ${p.relationship}.`);
       state.talkDay[p.id] = state.day;
       addNews(state, {
         category: "이벤트",
@@ -1322,7 +1343,8 @@ document.addEventListener("click", (e) => {
       series = null;
       battle = null;
       calendarMonth = null;
-      financeView = newFinanceView();
+      financeView = newFinanceView(),
+  profilePlayer = null;
       save();
       shell();
     }
@@ -1475,7 +1497,8 @@ document.addEventListener("change", async (e) => {
       tab = series ? "tactics" : "command";
       newsId = null;
       explorer = newExplorer();
-      financeView = newFinanceView();
+      financeView = newFinanceView(),
+  profilePlayer = null;
       calendarMonth = null;
       save();
       shell();
